@@ -8,10 +8,12 @@ status and use rhythms but is not yet a turnkey route to calibration-free
 absolute quantification.
 
 The manuscript prose lives in the authors' private paper repository; only the
-code and the final figures are here. The survey, use-rhythm and feasibility
-analyses belong to the companion technical paper, *ecoTrace biogas-sensor pilot,
-Kiambu County, Kenya: sensor, calibration and CFD* — cited here by name only,
-not by repository path.
+code and the final figures are here. The survey analysis, the cohort use-rhythm
+analysis and the feasibility check against literature production envelopes
+belong to the companion technical paper, *ecoTrace biogas-sensor pilot, Kiambu
+County, Kenya: sensor, calibration and CFD* — cited here by name only, not by
+repository path. This repository's own `fig_diurnal` is narrower: one
+household's normalised, shape-only use rhythm, not the cohort analysis.
 
 ## Contents
 
@@ -67,5 +69,6 @@ and released under the same terms.
 
 ## A note on privacy
 
-This repository contains no household data. It reads the de-identified survey
-from the dataset repository at runtime.
+This repository contains no household data. It reads raw telemetry (Parquet)
+and derived, de-identified CSVs from the dataset repository at runtime; it
+never reads the household survey.

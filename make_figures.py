@@ -17,8 +17,22 @@ import os
 # fig_diurnal reads the derived CSVs, so it uses the canonical corrected flow
 # rather than re-deriving it here.
 _env = os.environ.get("ECOTRACE_DATA")
-DATA_REPO = (Path(_env).expanduser().resolve() if _env
-             else Path(__file__).resolve().parents[1] / "ecotrace-pilot-data-kiambu")
+if _env:
+    DATA_REPO = Path(_env).expanduser().resolve()
+    if not DATA_REPO.is_dir():
+        raise FileNotFoundError(
+            f"ECOTRACE_DATA={_env!r} does not point at a directory "
+            f"(resolved to {DATA_REPO}). Run scripts/get_data.sh to fetch the "
+            "dataset, or fix/unset ECOTRACE_DATA."
+        )
+else:
+    DATA_REPO = Path(__file__).resolve().parents[1] / "ecotrace-pilot-data-kiambu"
+    if not DATA_REPO.is_dir():
+        raise FileNotFoundError(
+            f"Cannot locate the ecotrace dataset repository at {DATA_REPO}. "
+            "Run scripts/get_data.sh to fetch it, or set ECOTRACE_DATA to the "
+            "root of an existing checkout."
+        )
 RAW = DATA_REPO / "data" / "raw_data"
 DERIVED = DATA_REPO / "data" / "derived_data"
 STYLE = Path(__file__).resolve().parent / "scientific.mplstyle"
