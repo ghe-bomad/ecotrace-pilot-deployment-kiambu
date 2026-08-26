@@ -31,7 +31,8 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   and re-derives what it needs.
 - **`fig_diurnal`** (Figure 2): one household's normalised daily use rhythm.
   Each day is normalised to 100%, so the figure is shape-only and carries no
-  absolute volumes. Reads the data repository's derived CSVs.
+  absolute volumes. Reads the data repository's derived CSVs, which contain
+  only state-0 (normal measuring) rows with the swap-corrected flow.
 - **`installation_sites_22.png`**: map of the 22 installation sites in Kiambu
   County. Produced manually, not by code in this repository: household GPS is
   not part of the published dataset, so the map cannot be regenerated from

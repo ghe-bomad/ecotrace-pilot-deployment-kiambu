@@ -30,9 +30,12 @@ authors:
   - family-names: Weber
     given-names: Elia
     email: elweber@ethz.ch
+    orcid: "https://orcid.org/0009-0009-0937-8249"
     affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
   - family-names: Muntwyler
     given-names: Fiona
+    email: fiona.muntwyler@inf.ethz.ch
+    orcid: "https://orcid.org/0009-0008-1598-0001"
     affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
 contact:
   - family-names: Tkaczuk

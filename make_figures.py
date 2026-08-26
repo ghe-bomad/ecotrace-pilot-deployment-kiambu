@@ -161,6 +161,8 @@ def fig_coverage():
 
 def fig_diurnal(sen="SN_01015", min_day_records=20):
     df = corrected(sen)
+    # The derived CSVs already contain state-0 rows only (derive.py filters at
+    # ingest); the filter is kept as a guard against an older derivation.
     d = df[df["state"] == 0].dropna(subset=["flow_corrected"]).copy()
     loc = d["timestamp"].dt.tz_convert(TZ)
     d["hour"], d["day"] = loc.dt.hour, loc.dt.date
