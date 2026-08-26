@@ -1,1 +1,71 @@
-# ecotrace-pilot-sensor-kiambu
+# ecoTrace biogas-sensor pilot: installation and feasibility, Kiambu County, Kenya
+
+Figures and figure-generating code for the installation and social-science short
+communication: a feasibility assessment of low-cost, manufacturer-independent
+digital MRV for household biogas, from the ~6-month, 20-household Kiambu pilot.
+The paper argues that low-cost independent monitoring can capture operational
+status and use rhythms but is not yet a turnkey route to calibration-free
+absolute quantification.
+
+The manuscript prose lives in the authors' private paper repository; only the
+code and the final figures are here. The survey, use-rhythm and feasibility
+analyses belong to the companion technical paper, *ecoTrace biogas-sensor pilot,
+Kiambu County, Kenya: sensor, calibration and CFD* — cited here by name only,
+not by repository path.
+
+## Contents
+
+| path | what |
+|---|---|
+| `make_figures.py` | self-contained generator for `fig_coverage` and `fig_diurnal` |
+| `scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
+| `figures/` | the rendered figures, including the manually produced site maps |
+| `scripts/get_data.sh` | clones and derives the companion dataset |
+
+## The figures
+
+- **`fig_coverage`** (Figure 1): daily telemetry-completeness heatmap, one row
+  per device serial, de-identified. Reads raw Parquet from the data repository
+  and re-derives what it needs.
+- **`fig_diurnal`** (Figure 2): one household's normalised daily use rhythm.
+  Each day is normalised to 100%, so the figure is shape-only and carries no
+  absolute volumes. Reads the data repository's derived CSVs.
+- **`installation_sites_22.png`**: map of the 22 installation sites in Kiambu
+  County. Produced manually, not by code in this repository: household GPS is
+  not part of the published dataset, so the map cannot be regenerated from
+  public data. `installation_sites_20.png` is the 20-site version of the same
+  manually produced map.
+
+## Getting the data
+
+```bash
+bash scripts/get_data.sh
+```
+
+This clones the companion dataset repository (`ecotrace-pilot-data-kiambu`) at
+the revision pinned in `DATA_VERSION`, or updates an existing checkout, then
+builds its derived data. `make_figures.py` locates that repository via the
+`ECOTRACE_DATA` environment variable, if set, or otherwise a sibling checkout
+`../ecotrace-pilot-data-kiambu`.
+
+## Running
+
+```bash
+pip install -r requirements.txt
+python3 make_figures.py     # -> figures/fig_coverage.png, figures/fig_diurnal.png
+```
+
+## Citation
+
+Cite this repository via its DOI (see `CITATION.cff`) and, separately, cite the
+dataset it depends on. Use the version DOI of the release you actually ran.
+
+## Licence
+
+[Apache-2.0](LICENSE). The figures under `figures/` are outputs of that code
+and released under the same terms.
+
+## A note on privacy
+
+This repository contains no household data. It reads the de-identified survey
+from the dataset repository at runtime.

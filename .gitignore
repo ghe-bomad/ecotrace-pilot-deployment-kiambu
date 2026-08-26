@@ -1,0 +1,18 @@
+# The figures read data from the companion dataset repository, not from here.
+# Never vendor a copy of the dataset into this repo.
+data/
+*.parquet
+
+# The committed PNGs under figures/ are the paper versions and ARE tracked.
+# Scratch output is not.
+figures/_scratch/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# OS
+.DS_Store

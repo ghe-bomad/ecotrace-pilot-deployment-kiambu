@@ -1,0 +1,56 @@
+# --- text / fonts (LaTeX Computer Modern) ---
+text.usetex          : True
+text.latex.preamble  : \usepackage{amsmath}
+font.family          : serif
+font.serif           : Computer Modern Roman
+font.size            : 11
+axes.labelsize       : 11
+axes.titlesize       : 11
+legend.fontsize      : 11
+xtick.labelsize      : 11
+ytick.labelsize      : 11
+
+# --- axes, spines, colour cycle (Okabe-Ito, colour-blind safe) ---
+axes.linewidth       : 0.6
+axes.grid            : False
+axes.prop_cycle      : cycler('color', ['0072B2', 'D55E00', '009E73', 'CC79A7', 'E69F00', '56B4E9', '000000', 'F0E442', '999999'])
+
+# --- ticks: inward, all four sides, minor ticks visible ---
+xtick.direction      : in
+ytick.direction      : in
+xtick.top            : True
+ytick.right          : True
+xtick.minor.visible  : True
+ytick.minor.visible  : True
+xtick.major.size     : 4.0
+ytick.major.size     : 4.0
+xtick.minor.size     : 2.2
+ytick.minor.size     : 2.2
+xtick.major.width    : 0.6
+ytick.major.width    : 0.6
+xtick.minor.width    : 0.5
+ytick.minor.width    : 0.5
+
+# --- lines, markers, legend ---
+lines.linewidth      : 1.0
+lines.markersize     : 4.0
+legend.frameon       : False
+legend.handletextpad : 0.4
+legend.columnspacing : 1.0
+legend.labelspacing  : 0.3
+
+# --- output ---
+figure.dpi           : 150
+savefig.dpi          : 600
+savefig.bbox         : tight
+pdf.fonttype         : 42
+ps.fonttype          : 42
+
+# --- layout engine: use constrained_layout (handles colour bars cleanly,
+#     unlike tight_layout). Per-script gridspec_kw and explicit tight_layout()
+#     calls still win locally if present. ---
+figure.constrained_layout.use     : True
+figure.constrained_layout.w_pad   : 0.03
+figure.constrained_layout.h_pad   : 0.03
+figure.constrained_layout.wspace  : 0.01
+figure.constrained_layout.hspace  : 0.01

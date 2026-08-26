@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+message: "If you use this analysis code, please cite it as below, and cite the dataset it depends on (see references)."
+title: "ecoTrace biogas-sensor pilot, Kiambu County, Kenya: installation and feasibility figure code"
+abstract: >-
+  Analysis and figure-generating code for the installation and social-science
+  short communication arising from the ecoTrace household-biogas monitoring
+  pilot in Kiambu County, Kenya. Includes the publication figure scripts for
+  the telemetry-completeness and daily use-rhythm figures, and the manually
+  produced installation-site maps. The raw data and the derivation code live in
+  the companion dataset (see references); this repository reads the derived
+  data from it and does not duplicate it.
+type: software
+license: Apache-2.0
+version: 0.1.0
+date-released: "2026-07-22"
+# doi: 10.5281/zenodo.XXXXXXX   # add once the Zenodo record is reserved
+repository-code: "https://github.com/ghe-bomad/ecotrace-pilot-deployment-kiambu"
+keywords:
+  - biogas
+  - household energy
+  - digital MRV
+  - Kenya
+  - Kiambu
+authors:
+  - family-names: Tkaczuk
+    given-names: Jakub
+    email: jtkaczuk@ethz.ch
+    orcid: "https://orcid.org/0000-0001-7997-9423"
+    affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
+  - family-names: Weber
+    given-names: Elia
+    email: elweber@ethz.ch
+    affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
+  - family-names: Muntwyler
+    given-names: Fiona
+    affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
+contact:
+  - family-names: Tkaczuk
+    given-names: Jakub
+    email: jtkaczuk@ethz.ch
+    orcid: "https://orcid.org/0000-0001-7997-9423"
+    affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
+references:
+  - type: dataset
+    title: "ecoTrace biogas-sensor pilot, Kiambu County, Kenya: sensor telemetry, gas composition, household survey and derivation code"
+    authors:
+      - family-names: Tkaczuk
+        given-names: Jakub
+        orcid: "https://orcid.org/0000-0001-7997-9423"
+    # doi: 10.5281/zenodo.YYYYYYY   # the companion dataset; add its DOI here
+    notes: "Companion dataset (ecotrace-pilot-data-kiambu). This analysis reads its derived data."
