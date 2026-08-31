@@ -11,8 +11,8 @@ abstract: >-
   data from it and does not duplicate it.
 type: software
 license: Apache-2.0
-version: 0.1.0
-date-released: "2026-07-22"
+version: 1.0.0
+date-released: "2026-08-31"
 # doi: 10.5281/zenodo.XXXXXXX   # add once the Zenodo record is reserved
 repository-code: "https://github.com/ghe-bomad/ecotrace-pilot-deployment-kiambu"
 keywords:
@@ -37,6 +37,34 @@ authors:
     email: fiona.muntwyler@inf.ethz.ch
     orcid: "https://orcid.org/0009-0008-1598-0001"
     affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
+  - family-names: Ouma
+    given-names: Evance
+    email: evanceokoth14@gmail.com
+    orcid: "https://orcid.org/0009-0000-0480-3749"
+    affiliation: "Africa Bioenergy Program Ltd (ABPL), Kenya"
+  - family-names: Boyd-Williams
+    given-names: Natalie
+    email: nboydwilliams@ethz.ch
+    orcid: "https://orcid.org/0000-0002-7409-2863"
+    affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
+  - family-names: Akelo
+    given-names: Jacktone
+    email: asp1084@spu.ac.ke
+    orcid: "https://orcid.org/0000-0001-9812-3401"
+    affiliation: "St. Paul's University, Kenya"
+  - family-names: Wasonga
+    given-names: Michael
+    email: mwasonga@kbp.co.ke
+    affiliation: "Africa Bioenergy Program Ltd (ABPL), Kenya"
+  - family-names: Tilley
+    given-names: Elizabeth
+    email: tilleye@ethz.ch
+    orcid: "https://orcid.org/0000-0002-2095-9724"
+    affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
+  - family-names: Kinusu
+    given-names: Kevin
+    email: kkinusu@kbp.co.ke
+    affiliation: "Africa Bioenergy Program Ltd (ABPL), Kenya"
 contact:
   - family-names: Tkaczuk
     given-names: Jakub
@@ -44,7 +72,7 @@ contact:
     orcid: "https://orcid.org/0000-0001-7997-9423"
     affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
 references:
-  - type: dataset
+  - type: data
     title: "ecoTrace biogas-sensor pilot, Kiambu County, Kenya: sensor telemetry, gas composition, household survey and derivation code"
     authors:
       - family-names: Tkaczuk
@@ -65,6 +93,7 @@ references:
       - family-names: Ouma
         given-names: Evance
         email: evanceokoth14@gmail.com
+        orcid: "https://orcid.org/0009-0000-0480-3749"
         affiliation: "Africa Bioenergy Program Ltd (ABPL), Kenya"
       - family-names: Boyd-Williams
         given-names: Natalie

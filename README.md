@@ -28,7 +28,16 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 - **`fig_coverage`** (Figure 1): daily telemetry-completeness heatmap, one row
   per device serial, de-identified. Reads raw Parquet from the data repository
-  and re-derives what it needs.
+  and re-derives what it needs. All 20 household units are plotted; the three
+  that fail the inclusion criterion (SN_01012, SN_01018, SN_01023) are drawn
+  identically and simply sort to the bottom, but are excluded from the quoted
+  statistics. Note this set is not the same as the technical paper's
+  `EXCLUDE_SENSORS`: that analysis drops SN_01005 and SN_01010 (ILRI research
+  reactors, out of scope here too) plus SN_01012 and SN_01018, but keeps
+  SN_01023, which has enough data for the analyses it appears in while being too
+  sparse for a coverage statistic. Days before a unit's installation are masked
+  and painted warm grey, distinct from the completeness ramp, so "no data" cannot
+  read as "low completeness".
 - **`fig_diurnal`** (Figure 2): one household's normalised daily use rhythm.
   Each day is normalised to 100%, so the figure is shape-only and carries no
   absolute volumes. Reads the data repository's derived CSVs, which contain
@@ -57,6 +66,13 @@ builds its derived data. `make_figures.py` locates that repository via the
 pip install -r requirements.txt
 python3 make_figures.py     # -> figures/fig_coverage.png, figures/fig_diurnal.png
 ```
+
+**A system LaTeX installation is also required.** `scientific.mplstyle` sets
+`text.usetex = True`, so matplotlib shells out to LaTeX for every label; this is
+not a pip dependency and `pip install -r requirements.txt` will not supply it.
+Install TeX Live (Linux), MacTeX (macOS) or MiKTeX (Windows) with `amsmath` and
+`dvipng` on `PATH`. To render without LaTeX at the cost of the paper typography,
+comment out the `text.usetex` line in `scientific.mplstyle`.
 
 ## Citation
 

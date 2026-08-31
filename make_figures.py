@@ -48,10 +48,11 @@ PILOT_END = pd.Timestamp("2026-07-19 23:59:59", tz="UTC")   # fixed publication 
 OKABE_BLUE = "#0072B2"
 OKABE_VERM = "#D55E00"
 
-# Single-hue sequential ramp, light -> dark (magnitude). A deployed-but-silent day
-# is 0.0 and renders at the light end; only pre-installation is N/A (warm grey), so
-# "no data" can never be misread as "low completeness".
-UPTIME_CMAP = ["#e3edfa", "#a9c9ee", "#5f9ae0", "#2a78d6", "#1a4f96", "#0e2f5c"]
+# Perceptually uniform, colour-blind safe, reversed so low completeness is light
+# and high is dark. A deployed-but-silent day is 0.0 and renders at the light end;
+# only pre-installation is masked, and it is painted NA_GREY (a warm grey outside
+# the ramp) so "no data" can never be misread as "low completeness".
+UPTIME_CMAP = "cividis_r"
 NA_GREY = "#e0ddd6"
 
 
@@ -125,12 +126,10 @@ def fig_coverage():
             if d in day_ix:
                 M[r, day_ix[d]] = v
 
-    from matplotlib.colors import LinearSegmentedColormap
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     fig, ax = plt.subplots(figsize=(6.6, 4.4))
-    # cmap = LinearSegmentedColormap.from_list("uptime", UPTIME_CMAP)
-    # cmap.set_bad(NA_GREY)                          # pre-installation only
-    cmap = "cividis_r"
+    cmap = plt.get_cmap(UPTIME_CMAP).copy()
+    cmap.set_bad(NA_GREY)                            # pre-installation only
     x0 = mdates.date2num(start)
     im = ax.imshow(M, aspect="auto", cmap=cmap, vmin=0, vmax=1,
                    extent=[x0, x0 + len(days), len(order) - 0.5, -0.5],
@@ -148,7 +147,7 @@ def fig_coverage():
     fig.colorbar(im, cax=cax, label=r"daily telemetry completeness")
     fig.tight_layout()
     out = OUT / "fig_coverage.png"
-    fig.savefig(out, dpi=400)
+    fig.savefig(out)                                 # dpi from scientific.mplstyle (600)
     plt.close(fig)
     inc = np.array([uptime[s] for s in keep])
     print("wrote", out)

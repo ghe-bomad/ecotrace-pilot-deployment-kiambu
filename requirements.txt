@@ -1,4 +1,9 @@
-numpy
-pandas
-pyarrow
-matplotlib
+# Pinned to the versions the committed figures were rendered with.
+numpy==2.4.4
+pandas==3.0.2
+pyarrow==24.0.0
+matplotlib==3.9.0
+
+# NOTE: scientific.mplstyle sets text.usetex = True, so rendering also needs a
+# system LaTeX installation (TeX Live or MacTeX) with amsmath and dvipng on PATH.
+# That is not a pip dependency; see the README.
