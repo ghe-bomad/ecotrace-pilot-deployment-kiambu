@@ -1,5 +1,8 @@
 # ecoTrace biogas-sensor pilot: installation and feasibility, Kiambu County, Kenya
 
+[![DOI 10.5281/zenodo.22233280](badges/doi.svg)](https://doi.org/10.5281/zenodo.22233280)
+[![Licence Apache 2.0](badges/license.svg)](LICENSE)
+
 Figures and figure-generating code for the installation and social-science short
 communication: a feasibility assessment of low-cost, manufacturer-independent
 digital MRV for household biogas, from the ~6-month, 20-household Kiambu pilot.
@@ -23,6 +26,7 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 | `scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
 | `figures/` | the rendered figures, including the manually produced site maps |
 | `scripts/get_data.sh` | clones and derives the companion dataset |
+| `badges/` | the README badges, committed as SVG rather than fetched at render time |
 
 ## The figures
 
