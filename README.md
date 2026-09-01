@@ -76,8 +76,14 @@ comment out the `text.usetex` line in `scientific.mplstyle`.
 
 ## Citation
 
-Cite this repository via its DOI (see `CITATION.cff`) and, separately, cite the
-dataset it depends on. Use the version DOI of the release you actually ran.
+Cite this repository and, separately, the dataset it depends on:
+
+- this repository — [10.5281/zenodo.22233280](https://doi.org/10.5281/zenodo.22233280)
+- companion dataset — [10.5281/zenodo.22232789](https://doi.org/10.5281/zenodo.22232789)
+
+Both are concept DOIs and always resolve to the newest version. Use the **version
+DOI** of the release you actually ran, so your analysis is pinned to the exact
+code and data you used; each Zenodo record lists it.
 
 ## Licence
 

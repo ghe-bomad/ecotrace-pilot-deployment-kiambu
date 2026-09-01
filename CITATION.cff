@@ -13,7 +13,8 @@ type: software
 license: Apache-2.0
 version: 1.0.0
 date-released: "2026-09-01"
-# doi: 10.5281/zenodo.XXXXXXX   # add once the Zenodo record is reserved
+doi: 10.5281/zenodo.22233280   # concept DOI: always resolves to the newest version.
+# Cite the version DOI of the release you actually used; see the Zenodo record.
 repository-code: "https://github.com/ghe-bomad/ecotrace-pilot-deployment-kiambu"
 keywords:
   - biogas
@@ -32,7 +33,6 @@ authors:
     email: elweber@ethz.ch
     orcid: "https://orcid.org/0009-0009-0937-8249"
     affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
-
 contact:
   - family-names: Tkaczuk
     given-names: Jakub
