@@ -118,5 +118,5 @@ references:
         given-names: Kevin
         email: kkinusu@kbp.co.ke
         affiliation: "Africa Bioenergy Program Ltd (ABPL), Kenya"
-    # doi: 10.5281/zenodo.YYYYYYY   # the companion dataset; add its DOI here
+    doi: 10.5281/zenodo.22232789
     notes: "Companion dataset (ecotrace-pilot-data-kiambu). This analysis reads its derived data."
