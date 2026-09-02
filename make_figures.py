@@ -146,12 +146,11 @@ def fig_coverage():
     cax = make_axes_locatable(ax).append_axes("right", size="3%", pad=0.15)
     fig.colorbar(im, cax=cax, label=r"daily telemetry completeness")
     fig.tight_layout()
-    out = OUT / "fig_coverage.png"
-    fig.savefig(out)                                 # dpi from scientific.mplstyle (600)
+    fig.savefig(OUT / "Figure_1.png")
+    fig.savefig(OUT / "Figure_1.pdf")
     plt.close(fig)
     inc = np.array([uptime[s] for s in keep])
-    print("wrote", out)
-    print(f"  included {len(keep)}/{len(households)} | median uptime {np.median(inc):.3f}"
+    print(f"included {len(keep)}/{len(households)} | median uptime {np.median(inc):.3f}"
           f" | IQR {np.percentile(inc,25):.3f}-{np.percentile(inc,75):.3f}"
           f" | range {inc.min():.3f}-{inc.max():.3f}")
     for s in drop:
@@ -205,10 +204,10 @@ def fig_diurnal(sen="SN_01015", min_day_records=20):
     ax.set_ylabel(r"share of daily use / \%")
     ax.legend(loc="upper right", fontsize=8.5)
     fig.tight_layout()
-    out = OUT / "fig_diurnal.png"
-    fig.savefig(out)
+    fig.savefig(OUT / "Figure_2.png")
+    fig.savefig(OUT / "Figure_2.pdf")
     plt.close(fig)
-    print("wrote", out, "| ndays:", ndays, "| peak hours:",
+    print("\nndays:", ndays, "| peak hours:",
           [int(h) for h in np.argsort(mean)[-3:]])
 
 
