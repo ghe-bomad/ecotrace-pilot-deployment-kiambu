@@ -3,8 +3,8 @@
 [![DOI 10.5281/zenodo.22233280](badges/doi.svg)](https://doi.org/10.5281/zenodo.22233280)
 [![Licence Apache 2.0](badges/license.svg)](LICENSE)
 
-Figures and figure-generating code for the installation and social-science short
-communication: a feasibility assessment of low-cost, manufacturer-independent
+Figures, statistics and their generating code for the installation and
+feasibility pilot paper: a feasibility assessment of low-cost, manufacturer-independent
 digital MRV for household biogas, from the ~6-month, 20-household Kiambu pilot.
 The paper argues that low-cost independent monitoring can capture operational
 status and use rhythms but is not yet a turnkey route to calibration-free
@@ -23,6 +23,8 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 | path | what |
 |---|---|
 | `make_figures.py` | self-contained generator for `fig_coverage` and `fig_diurnal` |
+| `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
+| `make_graphical_abstract.py` | generator for the journal's graphical abstract |
 | `scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
 | `figures/` | the rendered figures, including the manually produced site maps |
 | `scripts/get_data.sh` | clones and derives the companion dataset |
@@ -33,7 +35,9 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 - **`fig_coverage`** (Figure 1): daily telemetry-completeness heatmap, one row
   per device serial, de-identified. Reads raw Parquet from the data repository
   and re-derives what it needs. All 20 household units are plotted; the three
-  that fail the inclusion criterion (SN_01012, SN_01018, SN_01023) are drawn
+  that fail the inclusion criterion (SN_01012, SN_01018, SN_01023; a unit is
+  usable only if it was still returning sensor records in the final week of
+  the pilot) are drawn
   identically and simply sort to the bottom, but are excluded from the quoted
   statistics. Note this set is not the same as the technical paper's
   `EXCLUDE_SENSORS`: that analysis drops SN_01005 and SN_01010 (ILRI research
@@ -69,7 +73,18 @@ builds its derived data. `make_figures.py` locates that repository via the
 ```bash
 pip install -r requirements.txt
 python3 make_figures.py     # -> figures/fig_coverage.png, figures/fig_diurnal.png
+python3 make_stats.py       # prints the paper's quoted statistics, labelled by where they appear
+python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
 ```
+
+`make_graphical_abstract.py` draws its cooking-rhythm curve with the same
+`daily_profiles` helper as Figure 2, so the two cannot drift apart. It needs
+LaTeX, like `make_figures.py`.
+
+`make_stats.py` imports the loaders and constants from `make_figures.py`, so the
+unit sets, pilot window and completeness definition are shared, and it asserts
+that the hand-listed excluded units are exactly those the inclusion rule
+excludes. It needs no LaTeX.
 
 **A system LaTeX installation is also required.** `scientific.mplstyle` sets
 `text.usetex = True`, so matplotlib shells out to LaTeX for every label; this is

@@ -41,8 +41,10 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 TZ = "Africa/Nairobi"
 NOT_HOUSEHOLD = {"SN_01005", "SN_01010"}   # ILRI research reactors, excluded on scope
-# Units failing the inclusion criterion (see fig_coverage docstring). Kept in the
-# figure as documented field failures; excluded from all statistics.
+# Units failing the inclusion criterion: a unit is usable only if it was still
+# returning sensor records in the final week of the pilot (make_stats.py checks
+# that this set is exactly what the rule excludes). Kept in the figure as
+# documented field failures; excluded from all statistics.
 FAILED = {"SN_01012", "SN_01018", "SN_01023"}
 PILOT_END = pd.Timestamp("2026-07-19 23:59:59", tz="UTC")   # fixed publication cutoff
 OKABE_BLUE = "#0072B2"
@@ -157,7 +159,8 @@ def fig_coverage():
         print(f"  EXCLUDED {s}: uptime {uptime[s]:.3f}, last record {recs[s].index.max()}")
 
 
-def fig_diurnal(sen="SN_01015", min_day_records=20):
+def daily_profiles(sen="SN_01015", min_day_records=20) -> pd.DataFrame:
+    """One row per day, 24 hour-of-day columns, each day normalised to sum to 100%."""
     df = corrected(sen)
     # The derived CSVs already contain state-0 rows only (derive.py filters at
     # ingest); the filter is kept as a guard against an older derivation.
@@ -168,7 +171,11 @@ def fig_diurnal(sen="SN_01015", min_day_records=20):
                .unstack("hour").reindex(columns=range(24)).fillna(0.0))
     daily = daily[d.groupby("day").size().reindex(daily.index) >= min_day_records]
     daily = daily[daily.sum(axis=1) > 0]
-    dailyN = daily.div(daily.sum(axis=1), axis=0) * 100.0 # each day sums to 100%
+    return daily.div(daily.sum(axis=1), axis=0) * 100.0 # each day sums to 100%
+
+
+def fig_diurnal(sen="SN_01015", min_day_records=20):
+    dailyN = daily_profiles(sen, min_day_records)
     x = np.arange(24)
     mean = dailyN.mean(axis=0).values
     lo, hi = dailyN.quantile(0.25).values, dailyN.quantile(0.75).values
