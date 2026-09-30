@@ -77,6 +77,19 @@ def main():
     print(f"[Deployment] {days:,} device-days with data ({days * 24:,} device-hours), "
           f"{recs / 1e6:.1f} million sensor records across {len(kept)} units")
 
+    # -- duty cycle: which device states the received sensor records are in, and
+    #    how many expected minutes carry a normal-measuring (state 0) record
+    counts, measured, expected = pd.Series(dtype=float), 0, 0
+    for u in kept:
+        st = load_all(u, ["state"]).dropna(subset=["state"])
+        counts = counts.add(st["state"].value_counts(), fill_value=0)
+        measured += st.loc[st["state"] == 0, "timestamp"].dt.floor("min").nunique()
+        expected += ((PILOT_END.normalize() - ts[u][0].normalize()).days + 1) * 1440
+    share = counts / counts.sum()
+    print(f"[Methods] received sensor records by state: normal {share.get(0, 0):.0%}, "
+          f"warm-up {share.get(1, 0):.0%}, sleep {share.get(5, 0):.0%}, low voltage {share.get(6, 0):.2%}; "
+          f"minutes with a normal-measuring record {measured / expected:.0%} of expected")
+
     # -- 01013: included, but reduced completeness late in the pilot
     by_day = daily_completeness(ts["SN_01013"])
     monthly = by_day.groupby(pd.PeriodIndex(pd.to_datetime(by_day.index), freq="M")).mean()
@@ -95,6 +108,12 @@ def main():
     valid = ts[s].floor("min").nunique() / (span_days * 1440)
     print(f"[Feasibility, Discussion, Fig. 1] 01018 last sensor record {ts[s].max().date()}; "
           f"10-min reporting slots with a packet {slots:.1%}; valid one-minute records {valid:.1%} of expected")
+
+    # -- the two units that stopped: battery voltage at their last heartbeat
+    for u in ("SN_01012", "SN_01023"):
+        b = load_all(u, ["battery_volt"]).dropna(subset=["battery_volt"]).sort_values("timestamp")
+        print(f"[Feasibility] {u[3:]} stopped {ts[u].max().date()}; battery at last heartbeat "
+              f"{b['battery_volt'].iloc[-1]:.2f} V ({b['timestamp'].iloc[-1]:%Y-%m-%d %H:%M} UTC)")
 
     # -- connectivity: RSSI over the analysed units (heartbeat rows carry it)
     rssi = pd.concat([load_all(u, ["rssi_dbm"])["rssi_dbm"].dropna() for u in kept])
