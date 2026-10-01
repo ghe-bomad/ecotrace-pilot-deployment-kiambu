@@ -22,7 +22,7 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 | path | what |
 |---|---|
-| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm) and the supplementary `fig_coverage` |
+| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm), `Figure_3` (daily gas-use duration per household) and the supplementary `fig_coverage` |
 | `validity.py` | the four-check data-validity classification behind Figure 1 and its quoted counts |
 | `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
 | `make_graphical_abstract.py` | generator for the journal's graphical abstract |
@@ -37,8 +37,9 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   `validity.py` applies four checks in order: link (connectivity heartbeats
   received), data (one-minute sensor records received), sensor health (no more
   than 20 flow-sensor reset messages a day) and use (at least 20 minutes in the
-  measuring state, which the firmware enters only while gas flows). The
-  thresholds were set from this fleet and are heuristics; "valid" means the sensor
+  sustained measuring-state run with corrected flow at or above the 2 L/min
+  deadband; see the `validity.py` docstring for every threshold and the order of
+  the checks). The thresholds were set from this fleet and are heuristics; "valid" means the sensor
   was alive and measuring, not that its readings are accurate.
 - **`fig_coverage`** (supplementary; Figure 1 in earlier versions): daily telemetry-completeness heatmap, one row
   per device serial, de-identified. Reads raw Parquet from the data repository

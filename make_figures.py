@@ -208,6 +208,36 @@ def fig_validity():
     plt.close(fig)
 
 
+def fig_use_spread():
+    """Figure 3: daily gas-use duration per usable household (valid days only).
+
+    Use duration is the number of minutes per day in sustained measuring-state runs
+    with corrected flow at or above the 2 L/min deadband (validity.py). The
+    corrected flow is used only as an on/off test, so the figure carries no volume.
+    """
+    from validity import classify
+    df = classify()
+    df = df[~df["unit"].isin([u[3:] for u in FAILED]) & df["cls"].str.startswith("valid")]
+    order = df.groupby("unit")["use_min"].median().sort_values(ascending=False).index.tolist()
+    data = [df.loc[df["unit"] == u, "use_min"].values / 60 for u in order]
+    fig, ax = plt.subplots(figsize=(6.6, 3.4))
+    ax.boxplot(data, widths=0.55, showfliers=True, patch_artist=True,
+               boxprops=dict(facecolor="#cfe0ef", edgecolor=OKABE_BLUE, linewidth=0.8),
+               medianprops=dict(color=OKABE_BLUE, linewidth=1.4),
+               whiskerprops=dict(color=OKABE_BLUE, linewidth=0.8), capprops=dict(color=OKABE_BLUE, linewidth=0.8),
+               flierprops=dict(marker="o", markersize=2.2, markerfacecolor="none", markeredgecolor="0.55",
+                               markeredgewidth=0.5))
+    ax.set_xticks(range(1, len(order) + 1)); ax.set_xticklabels(order, rotation=90, fontsize=7.5)
+    ax.tick_params(axis="x", which="both", length=0, top=False); ax.tick_params(axis="y", right=False)
+    ax.minorticks_off()
+    ax.set_xlabel(r"monitoring unit")
+    ax.set_ylabel(r"daily gas-use duration / h")
+    ax.set_ylim(bottom=0)
+    fig.savefig(OUT / "Figure_3.png")
+    fig.savefig(OUT / "Figure_3.pdf")
+    plt.close(fig)
+
+
 def daily_profiles(sen="SN_01015", min_day_records=20) -> pd.DataFrame:
     """One row per day, 24 hour-of-day columns, each day normalised to sum to 100%."""
     df = corrected(sen)
@@ -216,7 +246,9 @@ def daily_profiles(sen="SN_01015", min_day_records=20) -> pd.DataFrame:
     d = df[df["state"] == 0].dropna(subset=["flow_corrected"]).copy()
     loc = d["timestamp"].dt.tz_convert(TZ)
     d["hour"], d["day"] = loc.dt.hour, loc.dt.date
-    daily = (d.groupby(["day", "hour"])["flow_corrected"].mean()
+    # hourly SUM of flow, so each hour's share is its share of the day's gas use;
+    # a mean would be diluted by the idle-wake samples logged when no gas flows
+    daily = (d.groupby(["day", "hour"])["flow_corrected"].sum()
                .unstack("hour").reindex(columns=range(24)).fillna(0.0))
     daily = daily[d.groupby("day").size().reindex(daily.index) >= min_day_records]
     daily = daily[daily.sum(axis=1) > 0]
@@ -253,7 +285,7 @@ def fig_diurnal(sen="SN_01015", min_day_records=20):
                     fontsize=8.5,
                     color="0.25")
     ax.set_xlim(0, 24)
-    ax.set_ylim(0, 20)
+    ax.set_ylim(0, max(hi.max(), mean.max()) * 1.12)
     ax.set_xticks([0, 3, 6, 9, 12, 15, 18, 21, 24])
     ax.xaxis.set_minor_locator(MultipleLocator(1))   # minor ticks on every whole hour
     ax.set_xlabel(r"hour of day (Nairobi, Kenya)")
@@ -272,3 +304,4 @@ if __name__ == "__main__":
     fig_validity()
     fig_coverage()
     fig_diurnal()
+    fig_use_spread()

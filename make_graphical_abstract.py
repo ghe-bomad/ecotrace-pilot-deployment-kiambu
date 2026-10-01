@@ -82,7 +82,7 @@ def panel_pilot(ax):
     ax.add_patch(Rectangle((sx - 0.08, gy + 0.56), 0.16, 0.035, facecolor=INK2, edgecolor="none", zorder=4))
     flame(ax, sx, gy + 0.60, 0.26, 0.16)
     ax.text(sx, gy + 0.46, "stove", fontsize=8.5, ha="center", va="center", color="white", zorder=6)
-    for i, line in enumerate([r"20 households, Kiambu, Kenya", r"6 months of 1-min gas flow",
+    for i, line in enumerate([r"20 households, Kiambu, Kenya", r"6 months of gas-use monitoring",
                               r"solar power, cellular link"]):
         ax.text(0.12, 0.66 - 0.23 * i, line, fontsize=9, va="top", color=INK if i < 2 else INK2)
 

@@ -6,6 +6,7 @@ Rendered figures for the installation paper.
 |---|---|
 | `Figure_1.{png,pdf}` | `../make_figures.py` (Figure 1, data validity per unit-day) |
 | `Figure_2.{png,pdf}` | `../make_figures.py` (Figure 2, one household's use rhythm) |
+| `Figure_3.{png,pdf}` | `../make_figures.py` (Figure 3, daily gas-use duration per household) |
 | `fig_coverage.{png,pdf}` | `../make_figures.py` (supplementary: telemetry completeness; Figure 1 in earlier versions) |
 | `fig_diurnal.png` | legacy render of Figure 2 |
 | `graphical_abstract.{svg,pdf}` | `../make_graphical_abstract.py` (journal graphical abstract, 13 x 5 cm, vector) |

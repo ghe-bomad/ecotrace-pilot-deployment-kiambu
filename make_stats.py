@@ -152,10 +152,36 @@ def main():
     others = v[(v["unit"] != "01018") & (v["cls"] == "sensor fault signs")]
     print(f"[Feasibility] fault-sign days on other units: "
           + "; ".join(f"{r.unit} {r.day} ({int(r.resets)} resets)" for r in others.itertuples()))
+    print(f"[Feasibility] of these: silent {int((on.cls == 'silent: link up, no data').sum())}, "
+          f"fault signs {int((on.cls == 'sensor fault signs').sum())}")
+    gaps = [(pd.Timestamp("2026-04-28").date(), pd.Timestamp("2026-05-08").date()),
+            (pd.Timestamp("2026-06-24").date(), pd.Timestamp("2026-07-07").date())]
+    fw = v[v["cls"] == "offline: fleet-wide"]
+    in_gap = fw["day"].apply(lambda d: any(a <= d <= b for a, b in gaps))
+    su = v[v["cls"] == "offline: single unit"]
+    print(f"[Feasibility] fleet-wide offline unit-days {len(fw)}, of which in the two SIM gaps {int(in_gap.sum())}; "
+          f"single-unit offline {len(su)}, of which 01012/01023 {int(su.unit.isin(['01012', '01023']).sum())}")
     usable = v[v["unit"].isin([s[3:] for s in kept])]
     print(f"[Feasibility] usable units: max resets/day excluding those days "
           f"{int(usable.loc[usable.cls != 'sensor fault signs', 'resets'].max())}; classes "
           + ", ".join(f"{c} {n}" for c, n in usable["cls"].value_counts().reindex(CLASSES, fill_value=0).items() if n))
+
+    nu = usable[usable["cls"] == "valid: no use"]
+    print(f"[Feasibility] usable units: no-use days {len(nu)}, top units {nu.unit.value_counts().head(3).to_dict()}")
+    # -- gas use (Figure 3): sustained, flowing minutes per valid day, per usable unit
+    vd = usable[usable["cls"].str.startswith("valid")]
+    med_h = vd.groupby("unit")["use_min"].median() / 60
+    print(f"[Feasibility, Fig. 3] median daily gas-use duration per unit {med_h.min():.1f}-{med_h.max():.1f} h "
+          f"(median across units {med_h.median():.1f} h)")
+    sus_min, flow_min, exp_min = 0, 0, 0
+    for u in kept:
+        c = corrected(u)
+        c = c[c["timestamp"] <= PILOT_END].assign(t=c["timestamp"].dt.floor("min")).drop_duplicates("t").sort_values("t")
+        run = c.groupby((c["t"].diff() != pd.Timedelta("1min")).cumsum())["t"].transform("size")
+        sus_min += int((run >= 3).sum()); flow_min += int(((run >= 3) & (c["flow_corrected"] >= 2)).sum())
+        exp_min += ((PILOT_END.normalize() - ts[u][0].normalize()).days + 1) * 1440
+    print(f"[Methods] sustained measuring minutes {sus_min / exp_min:.0%} of expected, with flow >= 2 L/min "
+          f"{flow_min / exp_min:.0%}; sustained minutes without such flow {1 - flow_min / sus_min:.0%}")
 
     # -- connectivity: RSSI over the analysed units (heartbeat rows carry it)
     rssi = pd.concat([load_all(u, ["rssi_dbm"])["rssi_dbm"].dropna() for u in kept])
