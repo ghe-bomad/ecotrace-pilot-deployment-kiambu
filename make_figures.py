@@ -148,8 +148,8 @@ def fig_coverage():
     cax = make_axes_locatable(ax).append_axes("right", size="3%", pad=0.15)
     fig.colorbar(im, cax=cax, label=r"daily telemetry completeness")
     fig.tight_layout()
-    fig.savefig(OUT / "Figure_1.png")
-    fig.savefig(OUT / "Figure_1.pdf")
+    fig.savefig(OUT / "fig_coverage.png")
+    fig.savefig(OUT / "fig_coverage.pdf")
     plt.close(fig)
     inc = np.array([uptime[s] for s in keep])
     print(f"included {len(keep)}/{len(households)} | median uptime {np.median(inc):.3f}"
@@ -157,6 +157,55 @@ def fig_coverage():
           f" | range {inc.min():.3f}-{inc.max():.3f}")
     for s in drop:
         print(f"  EXCLUDED {s}: uptime {uptime[s]:.3f}, last record {recs[s].index.max()}")
+
+
+def fig_validity():
+    """Figure 1: validity class of every household unit-day (four checks, see validity.py).
+
+    Rows are sorted by mean daily record completeness, with the three excluded units
+    last. Colours: teal = valid (dark: gas used, light: no use); warm neutrals =
+    delivery problems; amber = silent (link up, no data); violet = sensor fault signs.
+    The coloured classes were checked for lightness, chroma, colour-vision-deficiency
+    and normal-vision separation, and 3:1 contrast on white.
+    """
+    from matplotlib.colors import ListedColormap
+    from matplotlib.patches import Patch
+    from validity import classify
+    colours = {"valid: gas used": "#00897B", "valid: no use": "#9ED6CE", "partial data": "#D6C59B",
+               "offline: fleet-wide": "#A7A29A", "offline: single unit": "#5C5852",
+               "silent: link up, no data": "#B8650A", "sensor fault signs": "#6A3D9A"}
+    not_installed = "#F5F3EF"
+    df = classify()
+    df["day"] = pd.to_datetime(df["day"])
+    comp = df.groupby("unit")["rec"].mean()
+    failed = ["01023", "01012", "01018"]
+    units = [u for u in comp.sort_values(ascending=False).index if u not in failed] + failed
+    days = pd.date_range(df["day"].min(), df["day"].max(), freq="D")
+    idx = {c: i for i, c in enumerate(colours)}
+    M = np.full((len(units), len(days)), np.nan)
+    col = {d: i for i, d in enumerate(days)}
+    for r in df.itertuples():
+        M[units.index(r.unit), col[r.day]] = idx[r.cls]
+    cmap = ListedColormap(list(colours.values())); cmap.set_bad(not_installed)
+    fig, ax = plt.subplots(figsize=(6.6, 4.6))
+    x0 = mdates.date2num(days[0])
+    ax.imshow(np.ma.masked_invalid(M), aspect="auto", cmap=cmap, vmin=-0.5, vmax=len(colours) - 0.5,
+              extent=[x0, x0 + len(days), len(units) - 0.5, -0.5], interpolation="nearest")
+    ax.xaxis_date()
+    ax.xaxis.set_major_locator(mdates.MonthLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+    ax.set_yticks(range(len(units))); ax.set_yticklabels(units, fontsize=7)
+    ax.tick_params(axis="y", length=0); ax.minorticks_off()
+    ax.set_ylabel(r"monitoring unit"); ax.set_xlabel(r"2026")
+    handles = [Patch(facecolor=c, label=l) for l, c in colours.items()]
+    handles.append(Patch(facecolor=not_installed, edgecolor="#bdb8ad", linewidth=0.5, label="not yet installed"))
+    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.13), ncol=4, fontsize=7.5,
+              frameon=False, handlelength=1.2, columnspacing=1.0)
+    fig.set_layout_engine("none")
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.27)
+    fig.savefig(OUT / "Figure_1.png", bbox_inches=None)
+    fig.savefig(OUT / "Figure_1.pdf", bbox_inches=None)
+    plt.close(fig)
 
 
 def daily_profiles(sen="SN_01015", min_day_records=20) -> pd.DataFrame:
@@ -220,5 +269,6 @@ def fig_diurnal(sen="SN_01015", min_day_records=20):
 
 if __name__ == "__main__":
     set_mpl()
+    fig_validity()
     fig_coverage()
     fig_diurnal()

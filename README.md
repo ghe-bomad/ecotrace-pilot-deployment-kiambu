@@ -22,7 +22,8 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 | path | what |
 |---|---|
-| `make_figures.py` | self-contained generator for `fig_coverage` and `fig_diurnal` |
+| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm) and the supplementary `fig_coverage` |
+| `validity.py` | the four-check data-validity classification behind Figure 1 and its quoted counts |
 | `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
 | `make_graphical_abstract.py` | generator for the journal's graphical abstract |
 | `scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
@@ -32,7 +33,14 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 ## The figures
 
-- **`fig_coverage`** (Figure 1): daily telemetry-completeness heatmap, one row
+- **`Figure_1`** (`fig_validity`): the validity class of every household unit-day.
+  `validity.py` applies four checks in order: link (connectivity heartbeats
+  received), data (one-minute sensor records received), sensor health (no more
+  than 20 flow-sensor reset messages a day) and use (at least 20 minutes in the
+  measuring state, which the firmware enters only while gas flows). The
+  thresholds were set from this fleet and are heuristics; "valid" means the sensor
+  was alive and measuring, not that its readings are accurate.
+- **`fig_coverage`** (supplementary; Figure 1 in earlier versions): daily telemetry-completeness heatmap, one row
   per device serial, de-identified. Reads raw Parquet from the data repository
   and re-derives what it needs. All 20 household units are plotted; the three
   that fail the inclusion criterion (SN_01012, SN_01018, SN_01023; a unit is
@@ -72,7 +80,7 @@ builds its derived data. `make_figures.py` locates that repository via the
 
 ```bash
 pip install -r requirements.txt
-python3 make_figures.py     # -> figures/fig_coverage.png, figures/fig_diurnal.png
+python3 make_figures.py     # -> figures/Figure_1, Figure_2 and fig_coverage (.png, .pdf)
 python3 make_stats.py       # prints the paper's quoted statistics, labelled by where they appear
 python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
 ```

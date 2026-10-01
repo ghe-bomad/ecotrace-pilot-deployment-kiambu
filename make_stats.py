@@ -16,6 +16,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 from make_figures import RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, load_sensor_times
+from validity import CLASSES, classify
 
 # Inclusion rule: a unit is "usable" if it was still returning sensor records in
 # the final week of the pilot. FAILED in make_figures.py must equal the set this
@@ -114,6 +115,28 @@ def main():
         b = load_all(u, ["battery_volt"]).dropna(subset=["battery_volt"]).sort_values("timestamp")
         print(f"[Feasibility] {u[3:]} stopped {ts[u].max().date()}; battery at last heartbeat "
               f"{b['battery_volt'].iloc[-1]:.2f} V ({b['timestamp'].iloc[-1]:%Y-%m-%d %H:%M} UTC)")
+
+    # -- data validity (Figure 1): four checks per unit-day, see validity.py
+    v = classify()
+    counts = v["cls"].value_counts().reindex(CLASSES, fill_value=0)
+    print("[Feasibility, Fig. 1] unit-days by validity class (20 units): "
+          + ", ".join(f"{c} {n}" for c, n in counts.items()))
+    on = v[v["dashboard_online"]]
+    bad = on["cls"].isin(["silent: link up, no data", "sensor fault signs"])
+    print(f"[Feasibility, Discussion] unit-days an uptime view shows online {len(on):,}; without valid "
+          f"measurement {bad.sum()} ({bad.mean():.1%}), units {sorted(on.loc[bad, 'unit'].unique())}")
+    f18 = v[v["unit"] == "01018"]
+    print(f"[Feasibility] 01018 first fault-sign day {f18.loc[f18.cls == 'sensor fault signs', 'day'].min()}; "
+          f"first silent day {f18.loc[f18.cls.str.startswith('silent'), 'day'].min()}; "
+          f"silent days {int(f18.cls.str.startswith('silent').sum())}; resets/day on fault days "
+          f"{int(f18.loc[f18.cls == 'sensor fault signs', 'resets'].min())}-{int(f18['resets'].max())}")
+    others = v[(v["unit"] != "01018") & (v["cls"] == "sensor fault signs")]
+    print(f"[Feasibility] fault-sign days on other units: "
+          + "; ".join(f"{r.unit} {r.day} ({int(r.resets)} resets)" for r in others.itertuples()))
+    usable = v[v["unit"].isin([s[3:] for s in kept])]
+    print(f"[Feasibility] usable units: max resets/day excluding those days "
+          f"{int(usable.loc[usable.cls != 'sensor fault signs', 'resets'].max())}; classes "
+          + ", ".join(f"{c} {n}" for c, n in usable["cls"].value_counts().reindex(CLASSES, fill_value=0).items() if n))
 
     # -- connectivity: RSSI over the analysed units (heartbeat rows carry it)
     rssi = pd.concat([load_all(u, ["rssi_dbm"])["rssi_dbm"].dropna() for u in kept])
