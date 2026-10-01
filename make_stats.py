@@ -9,13 +9,14 @@ drift between the figures and the text.
 """
 from __future__ import annotations
 import glob
+import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
-from make_figures import RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, load_sensor_times
+from make_figures import RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, load_sensor_times, corrected
 from validity import CLASSES, classify
 
 # Inclusion rule: a unit is "usable" if it was still returning sensor records in
@@ -115,6 +116,24 @@ def main():
         b = load_all(u, ["battery_volt"]).dropna(subset=["battery_volt"]).sort_values("timestamp")
         print(f"[Feasibility] {u[3:]} stopped {ts[u].max().date()}; battery at last heartbeat "
               f"{b['battery_volt'].iloc[-1]:.2f} V ({b['timestamp'].iloc[-1]:%Y-%m-%d %H:%M} UTC)")
+
+    # -- methane fraction vs the Draeger X-am 8000 spot reference, on this paper's
+    #    usable units: per-unit median of the dataset's no-flow comp_corrected
+    #    against the mean reference reading taken before H2S removal (the method
+    #    of the dataset's field_correction.md, restricted to the 17 units here)
+    gt = json.load(open(RAW.parent / "biogas_composition.json"))
+    ref = {f"SN_{k}": np.mean([float(m["CH4_vol_perc"]) for m in v if m.get("after_H2S_removal") != "True"])
+           for k, v in gt.items() if any(m.get("after_H2S_removal") != "True" for m in v)}
+    pairs = []
+    for u in kept:
+        cc = corrected(u)["comp_corrected"].dropna() if u in ref else pd.Series(dtype=float)
+        if len(cc) >= 50:
+            pairs.append((cc.median() * 100, ref[u]))
+    pred, gt_ch4 = np.array(pairs).T
+    resid = pred - gt_ch4
+    print(f"[Methods] CH4 vs reference on {len(pairs)} usable units: bias {resid.mean():+.1f} vol-%, "
+          f"RMSE {np.sqrt((resid ** 2).mean()):.1f} vol-%, r {np.corrcoef(pred, gt_ch4)[0, 1]:.2f}; "
+          f"reference range {gt_ch4.min():.0f}-{gt_ch4.max():.0f} vol-%")
 
     # -- data validity (Figure 1): four checks per unit-day, see validity.py
     v = classify()
