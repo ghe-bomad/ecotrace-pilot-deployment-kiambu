@@ -34,12 +34,14 @@ WAKE_GAP_S = (120, 330)
 
 
 def missed_litres(c: pd.DataFrame) -> dict:
-    """Estimated litres not measured for one unit: at the start of use and during use."""
+    """Estimated litres not measured for one unit: at the start of use and during
+    use. Sleeps the dataset already filled (``gap_fill_L`` > 0) are not counted."""
     c = c.sort_values("timestamp")
     gap = c["timestamp"].diff().dt.total_seconds()
     q = c["flow_zero_cal"]
     wake = gap.gt(WAKE_GAP_S[0]) & gap.le(WAKE_GAP_S[1]) & (q >= FLOW_MIN)
-    during = wake & (q.shift() >= FLOW_MIN)
+    during = wake & (q.shift() >= FLOW_MIN) & ~(c["gap_fill_L"] > 0)   # filled sleeps are not missed
+    wake &= ~(c["gap_fill_L"] > 0)
     unmeasured_min = (gap - ROW_S) / 60
     return {"start": float((q * unmeasured_min / 2)[wake & ~during].sum()),
             "during": float((q * unmeasured_min)[during].sum())}
@@ -203,16 +205,18 @@ def main():
     med_v = vol.groupby("unit")["volume_L"].median() / 1000
     print(f"[Feasibility, Fig. 4] median daily gas volume per unit {med_v.min():.2f}-{med_v.max():.2f} m3 "
           f"(median across units {med_v.median():.2f} m3, {len(vol)} valid unit-days)")
-    start = during = total = 0.0
+    start = during = measured = filled = 0.0
     for u in kept:
         c = corrected(u)
         c = c[c["timestamp"] <= PILOT_END]
         m = missed_litres(c)
         start += m["start"]; during += m["during"]
-        total += c.loc[c["flow_zero_cal"] >= NO_FLOW_MAX, "flow_zero_cal"].sum()
-    use = start + during + total
-    print(f"[Feasibility, Fig. 4] gas not measured (sleep and warm-up), estimated: {(start + during) / use:.1%} "
-          f"of use; at the start of use {start / use:.1%}, while the unit slept during use {during / use:.1%}")
+        measured += c.loc[c["flow_zero_cal"] >= NO_FLOW_MAX, "flow_zero_cal"].sum()
+        filled += c["gap_fill_L"].sum()
+    use = start + during + measured + filled
+    print(f"[Feasibility, Fig. 4] gas filled into sleeps during use (dataset gap_fill_L): {filled / use:.1%} of use")
+    print(f"[Feasibility, Fig. 4] gas still not measured, estimated: {(start + during) / use:.1%} of use; "
+          f"at the start of use {start / use:.1%}, in sleeps during use that fail the fill rule {during / use:.1%}")
     sus_min, flow_min, exp_min = 0, 0, 0
     for u in kept:
         c = corrected(u)

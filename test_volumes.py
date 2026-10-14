@@ -6,8 +6,27 @@ from make_figures import PILOT_END, daily_volume
 from make_stats import missed_litres
 
 
-def _rows(times, flow):
-    return pd.DataFrame({"timestamp": pd.to_datetime(times, utc=True), "flow_zero_cal": flow})
+def _rows(times, flow, fill=None):
+    return pd.DataFrame({"timestamp": pd.to_datetime(times, utc=True), "flow_zero_cal": flow,
+                         "gap_fill_L": [0.0] * len(flow) if fill is None else fill})
+
+
+def test_daily_volume_adds_the_gap_fill():
+    # measured minutes plus the litres the dataset filled into a sleep during use
+    c = _rows(["2026-03-01T10:00Z", "2026-03-01T10:05Z"], [6.0, 6.0], fill=[0.0, 24.0])
+    assert daily_volume(c).sum() == 6.0 + 6.0 + 24.0
+
+
+def test_daily_volume_counts_fill_on_idle_rows_too():
+    # gap_fill_L sits on the row after the sleep; that row's own flow may be below the idle gate
+    c = _rows(["2026-03-01T10:00Z", "2026-03-01T10:05Z"], [6.0, 0.3], fill=[0.0, 5.0])
+    assert daily_volume(c).sum() == 6.0 + 5.0
+
+
+def test_filled_sleeps_are_not_counted_as_unmeasured():
+    t0 = pd.Timestamp("2026-03-01T12:00Z")
+    c = _rows([t0, t0 + pd.Timedelta(seconds=300)], [8.0, 6.0], fill=[0.0, 28.0])
+    assert missed_litres(c) == {"start": 0.0, "during": 0.0}
 
 
 def test_daily_volume_sums_litres_per_utc_day():

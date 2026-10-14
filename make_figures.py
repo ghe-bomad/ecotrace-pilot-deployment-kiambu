@@ -246,22 +246,28 @@ NO_FLOW_MAX = 0.5   # L/min
 def daily_volume(c: pd.DataFrame) -> pd.Series:
     """Litres of gas per UTC day from one unit's state-0 rows.
 
-    Rows are one minute apart while the unit measures, so each row's
-    ``flow_zero_cal`` [L/min] is a litre count; rows below NO_FLOW_MAX are idle
-    and not counted. Days are UTC dates, the keys validity.py classifies, so
-    volumes join the valid days directly.
+    The dataset's volume definition (data repository,
+    data/derived_data/README.md, "Computing gas volumes"): rows are one minute
+    apart while the unit measures, so each row's ``flow_zero_cal`` [L/min] is a
+    litre count, rows below NO_FLOW_MAX are idle and not counted, and
+    ``gap_fill_L`` adds the gas that flowed while the unit slept during use.
+    Days are UTC dates, the keys validity.py classifies, so volumes join the
+    valid days directly.
     """
-    c = c[(c["timestamp"] <= PILOT_END) & (c["flow_zero_cal"] >= NO_FLOW_MAX)]
-    return c["flow_zero_cal"].groupby(c["timestamp"].dt.date).sum()
+    c = c[c["timestamp"] <= PILOT_END]
+    measured = c["flow_zero_cal"].where(c["flow_zero_cal"] >= NO_FLOW_MAX, 0.0)
+    return (measured + c["gap_fill_L"]).groupby(c["timestamp"].dt.date).sum()
 
 
 def daily_volumes() -> pd.DataFrame:
     """Daily gas volume [L] per usable household on valid days (Figure 4).
 
-    Uses ``flow_zero_cal``, the flow with each unit's zero-flow offset removed
-    (data repository, docs/field_correction.md section 7). A valid day without
-    measuring rows has zero volume. Volumes are a lower bound on use: the start
-    of use during sleep and warm-up is not measured (make_stats.py estimates it).
+    Uses ``flow_zero_cal``, the flow with each unit's zero-flow offset removed,
+    and ``gap_fill_L``, the gas filled into sleeps during use (data repository,
+    docs/field_correction.md sections 7 and 8). A valid day without measuring
+    rows has zero volume. Volumes are a lower bound on use: the start of use
+    during sleep and warm-up, and sleeps that fail the fill rule, are not
+    measured (make_stats.py estimates them).
     """
     from validity import classify
     valid = classify()
