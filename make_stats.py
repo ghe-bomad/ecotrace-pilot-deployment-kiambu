@@ -16,8 +16,29 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
-from make_figures import RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, load_sensor_times, corrected
-from validity import CLASSES, classify
+from make_figures import RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, load_sensor_times, corrected, daily_volumes
+from validity import CLASSES, FLOW_MIN, classify
+
+# Gas not measured while the unit sleeps (220 s) and warms up (50 s). A gap of one
+# sleep cycle between state-0 rows (within WAKE_GAP_S) marks a wake-up; longer gaps
+# are data gaps. A wake-up into flowing gas after a quiet row is the start of use:
+# with starts uniform over the cycle, half of it is lost on average. A wake-up into
+# flowing gas after a flowing row means the unit slept during use, and the whole
+# cycle is lost. Both are valued at the flow of the first measured minute.
+CYCLE_S = 270
+MISSED_PER_START_S = CYCLE_S / 2
+WAKE_GAP_S = (120, 330)
+
+
+def missed_litres(c: pd.DataFrame) -> dict:
+    """Estimated litres not measured for one unit: at the start of use and during use."""
+    c = c.sort_values("timestamp")
+    gap = c["timestamp"].diff().dt.total_seconds()
+    q = c["flow_zero_cal"]
+    wake = gap.gt(WAKE_GAP_S[0]) & gap.le(WAKE_GAP_S[1]) & (q >= FLOW_MIN)
+    during = wake & (q.shift() >= FLOW_MIN)
+    return {"start": float((q[wake & ~during] * MISSED_PER_START_S / 60).sum()),
+            "during": float((q[during] * CYCLE_S / 60).sum())}
 
 # Inclusion rule: a unit is "usable" if it was still returning sensor records in
 # the final week of the pilot. FAILED in make_figures.py must equal the set this
@@ -173,6 +194,21 @@ def main():
     med_h = vd.groupby("unit")["use_min"].median() / 60
     print(f"[Feasibility, Fig. 3] median daily gas-use duration per unit {med_h.min():.1f}-{med_h.max():.1f} h "
           f"(median across units {med_h.median():.1f} h)")
+    # -- gas volume (Figure 4): litres per valid day from the zero-calibrated flow
+    vol = daily_volumes()
+    med_v = vol.groupby("unit")["volume_L"].median() / 1000
+    print(f"[Feasibility, Fig. 4] median daily gas volume per unit {med_v.min():.2f}-{med_v.max():.2f} m3 "
+          f"(median across units {med_v.median():.2f} m3, {len(vol)} valid unit-days)")
+    start = during = total = 0.0
+    for u in kept:
+        c = corrected(u)
+        c = c[c["timestamp"] <= PILOT_END]
+        m = missed_litres(c)
+        start += m["start"]; during += m["during"]
+        total += c["flow_zero_cal"].sum()
+    use = start + during + total
+    print(f"[Feasibility, Fig. 4] gas not measured (sleep and warm-up), estimated: {(start + during) / use:.1%} "
+          f"of use; at the start of use {start / use:.1%}, while the unit slept during use {during / use:.1%}")
     sus_min, flow_min, exp_min = 0, 0, 0
     for u in kept:
         c = corrected(u)

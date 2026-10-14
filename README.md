@@ -22,9 +22,10 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 | path | what |
 |---|---|
-| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm), `Figure_3` (daily gas-use duration per household) and the supplementary `fig_coverage` |
+| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm), `Figure_3` (daily gas-use duration per household), `Figure_4` (daily gas volume per household) and the supplementary `fig_coverage` |
 | `validity.py` | the four-check data-validity classification behind Figure 1 and its quoted counts |
 | `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
+| `test_volumes.py` | tests for the daily-volume and unmeasured-gas calculations behind Figure 4 (`python3 -m pytest`) |
 | `make_graphical_abstract.py` | generator for the journal's graphical abstract |
 | `scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
 | `figures/` | the rendered figures, including the manually produced site maps |
@@ -55,6 +56,13 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   sparse for a coverage statistic. Days before a unit's installation are masked
   and painted warm grey, distinct from the completeness ramp, so "no data" cannot
   read as "low completeness".
+- **`Figure_4`** (`fig_volume`): daily gas volume per usable household on valid
+  days, from the dataset's `flow_zero_cal` column (the flow with each unit's
+  zero-flow offset removed; see the dataset's `docs/field_correction.md` §7).
+  One-minute measuring rows are summed as litres per UTC day, the same day key
+  `validity.py` uses. The volumes are a lower bound: gas flowing while the unit
+  sleeps or warms up is not measured. `make_stats.py` estimates that share,
+  separately for the start of use and for sleeps during use.
 - **`fig_diurnal`** (Figure 2): one household's normalised daily use rhythm.
   Each day is normalised to 100%, so the figure is shape-only and carries no
   absolute volumes. Reads the data repository's derived CSVs, which contain
@@ -81,7 +89,8 @@ builds its derived data. `make_figures.py` locates that repository via the
 
 ```bash
 pip install -r requirements.txt
-python3 make_figures.py     # -> figures/Figure_1, Figure_2 and fig_coverage (.png, .pdf)
+python3 make_figures.py     # -> figures/Figure_1 to Figure_4 and fig_coverage (.png, .pdf)
+python3 -m pytest           # tests for the Figure 4 calculations
 python3 make_stats.py       # prints the paper's quoted statistics, labelled by where they appear
 python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
 ```

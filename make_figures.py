@@ -238,6 +238,60 @@ def fig_use_spread():
     plt.close(fig)
 
 
+def daily_volume(c: pd.DataFrame) -> pd.Series:
+    """Litres of gas per UTC day from one unit's state-0 rows.
+
+    Rows are one minute apart while the unit measures, so each row's
+    ``flow_zero_cal`` [L/min] is a litre count. Days are UTC dates, the keys
+    validity.py classifies, so volumes join the valid days directly.
+    """
+    c = c[c["timestamp"] <= PILOT_END]
+    return c["flow_zero_cal"].groupby(c["timestamp"].dt.date).sum()
+
+
+def daily_volumes() -> pd.DataFrame:
+    """Daily gas volume [L] per usable household on valid days (Figure 4).
+
+    Uses ``flow_zero_cal``, the flow with each unit's zero-flow offset removed
+    (data repository, docs/field_correction.md section 7). A valid day without
+    measuring rows has zero volume. Volumes are a lower bound on use: the start
+    of use during sleep and warm-up is not measured (make_stats.py estimates it).
+    """
+    from validity import classify
+    valid = classify()
+    valid = valid[~valid["unit"].isin([u[3:] for u in FAILED]) & valid["cls"].str.startswith("valid")]
+    out = []
+    for unit in sorted(valid["unit"].unique()):
+        v = daily_volume(corrected(f"SN_{unit}"))
+        days = valid.loc[valid["unit"] == unit, "day"]
+        out.append(pd.DataFrame({"unit": unit, "day": days.to_numpy(),
+                                 "volume_L": days.map(v).fillna(0.0).to_numpy()}))
+    return pd.concat(out, ignore_index=True)
+
+
+def fig_volume():
+    """Figure 4: daily gas volume per usable household (valid days), same layout as Figure 3."""
+    vol = daily_volumes()
+    order = vol.groupby("unit")["volume_L"].median().sort_values(ascending=False).index.tolist()
+    data = [vol.loc[vol["unit"] == u, "volume_L"].to_numpy() / 1000 for u in order]
+    fig, ax = plt.subplots(figsize=(6.6, 3.4))
+    ax.boxplot(data, widths=0.55, showfliers=True, patch_artist=True,
+               boxprops=dict(facecolor="#cfe0ef", edgecolor=OKABE_BLUE, linewidth=0.8),
+               medianprops=dict(color=OKABE_BLUE, linewidth=1.4),
+               whiskerprops=dict(color=OKABE_BLUE, linewidth=0.8), capprops=dict(color=OKABE_BLUE, linewidth=0.8),
+               flierprops=dict(marker="o", markersize=2.2, markerfacecolor="none", markeredgecolor="0.55",
+                               markeredgewidth=0.5))
+    ax.set_xticks(range(1, len(order) + 1)); ax.set_xticklabels(order, rotation=90, fontsize=7.5)
+    ax.tick_params(axis="x", which="both", length=0, top=False); ax.tick_params(axis="y", right=False)
+    ax.minorticks_off()
+    ax.set_xlabel(r"monitoring unit")
+    ax.set_ylabel(r"daily gas volume / m$^3$")
+    ax.set_ylim(bottom=0)
+    fig.savefig(OUT / "Figure_4.png")
+    fig.savefig(OUT / "Figure_4.pdf")
+    plt.close(fig)
+
+
 def daily_profiles(sen="SN_01015", min_day_records=20) -> pd.DataFrame:
     """One row per day, 24 hour-of-day columns, each day normalised to sum to 100%."""
     df = corrected(sen)
@@ -305,3 +359,4 @@ if __name__ == "__main__":
     fig_coverage()
     fig_diurnal()
     fig_use_spread()
+    fig_volume()
