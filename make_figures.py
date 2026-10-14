@@ -271,8 +271,10 @@ def _boxes(ax, data, labels):
                flierprops=dict(marker="o", markersize=2.2, markerfacecolor="none", markeredgecolor=FLIER,
                                markeredgewidth=0.5))
     ax.set_xticks(range(1, len(labels) + 1)); ax.set_xticklabels(labels, rotation=90, fontsize=7.5)
-    # one x tick per unit, on both panels; no minor ticks on the categorical axis
-    ax.tick_params(axis="x", which="major", length=3.5, width=0.6, bottom=True, top=False)
+    # one x tick per unit, on the bottom and top edge of both panels; no minor
+    # ticks on the categorical axis
+    ax.tick_params(axis="x", which="major", length=3.5, width=0.6, bottom=True, top=True,
+                   labeltop=False)
     ax.tick_params(axis="y", right=False)
     ax.minorticks_off()
     ax.set_ylim(bottom=0)
