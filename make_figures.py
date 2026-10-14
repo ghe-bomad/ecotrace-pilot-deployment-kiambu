@@ -263,11 +263,10 @@ def daily_volumes() -> pd.DataFrame:
     """Daily gas volume [L] per usable household on valid days (Figure 4).
 
     Uses ``flow_zero_cal``, the flow with each unit's zero-flow offset removed,
-    and ``gap_fill_L``, the gas filled into sleeps during use (data repository,
+    and ``gap_fill_L``, the unmeasured gas next to rows in use (data repository,
     docs/field_correction.md sections 7 and 8). A valid day without measuring
-    rows has zero volume. Volumes are a lower bound on use: the start of use
-    during sleep and warm-up, and sleeps that fail the fill rule, are not
-    measured (make_stats.py estimates them).
+    rows has zero volume. The interiors of gaps longer than one sleep cycle are
+    not filled, so volumes are a lower bound there.
     """
     from validity import classify
     valid = classify()

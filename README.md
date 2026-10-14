@@ -60,11 +60,10 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   days, from the dataset's `flow_zero_cal` column (the flow with each unit's
   zero-flow offset removed; see the dataset's `docs/field_correction.md` §7).
   Uses the dataset's volume definition: one-minute measuring rows at or above
-  0.5 L/min (the dataset's no-flow gate) plus `gap_fill_L`, the gas the dataset
-  fills into sleeps during use, summed per UTC day, the same day key
-  `validity.py` uses. The volumes are a lower bound: gas at the start of use, and
-  in sleeps that fail the fill rule, is not measured. `make_stats.py` reports the
-  filled share and estimates the unmeasured one.
+  0.5 L/min (the dataset's no-flow gate) plus `gap_fill_L`, the unmeasured gas
+  the dataset fills in next to rows in use, summed per UTC day, the same day key
+  `validity.py` uses. The interiors of gaps longer than one sleep cycle are not
+  filled. `make_stats.py` reports the filled share.
 - **`fig_diurnal`** (Figure 2): one household's normalised daily use rhythm.
   Each day is normalised to 100%, so the figure is shape-only and carries no
   absolute volumes. Reads the data repository's derived CSVs, which contain

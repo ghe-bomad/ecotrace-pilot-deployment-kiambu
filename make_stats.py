@@ -18,61 +18,7 @@ import pyarrow.parquet as pq
 
 from make_figures import (RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, NO_FLOW_MAX, load_sensor_times,
                           corrected, daily_volumes)
-from validity import CLASSES, FLOW_MIN, classify
-
-# Gas not measured while the unit sleeps and warms up. A gap of one sleep cycle
-# between state-0 rows (within WAKE_GAP_S; in practice 300 s) marks a wake-up;
-# longer gaps are data gaps. Each row already stands for its own minute, so
-# gap - ROW_S seconds are unmeasured. A wake-up into flowing gas after a quiet row
-# is the start of use: with starts uniform over that time, half of it is lost on
-# average. A wake-up into flowing gas after a flowing row means the unit slept
-# during use, and all of it is lost. Both are valued at the flow of the first
-# measured minute. Single sleep cycles only: wake-ups after longer gaps are not
-# counted.
-ROW_S = 60
-WAKE_GAP_S = (120, 330)
-
-
-def missed_litres(c: pd.DataFrame) -> dict:
-    """Estimated litres not measured for one unit: at the start of use and during
-    use. Sleeps the dataset already filled (``gap_fill_L`` > 0) are not counted."""
-    c = c.sort_values("timestamp")
-    gap = c["timestamp"].diff().dt.total_seconds()
-    q = c["flow_zero_cal"]
-    wake = gap.gt(WAKE_GAP_S[0]) & gap.le(WAKE_GAP_S[1]) & (q >= FLOW_MIN)
-    during = wake & (q.shift() >= FLOW_MIN) & ~(c["gap_fill_L"] > 0)   # filled sleeps are not missed
-    wake &= ~(c["gap_fill_L"] > 0)
-    unmeasured_min = (gap - ROW_S) / 60
-    return {"start": float((q * unmeasured_min / 2)[wake & ~during].sum()),
-            "during": float((q * unmeasured_min)[during].sum())}
-
-# Inclusion rule: a unit is "usable" if it was still returning sensor records in
-# the final week of the pilot. FAILED in make_figures.py must equal the set this
-# rule excludes; main() asserts it.
-FINAL_WEEK_START = PILOT_END.normalize() - pd.Timedelta(days=6)
-MONTHS_REDUCED = ["2026-05", "2026-06", "2026-07"]   # 01013's reduced-completeness months
-
-
-def households() -> list[str]:
-    return sorted({Path(d).name for d in glob.glob(str(RAW / "SN_*"))} - NOT_HOUSEHOLD)
-
-
-def load_all(sen: str, columns: list[str]) -> pd.DataFrame:
-    """Every row (sensor and heartbeat) with the requested columns that exist."""
-    frames = []
-    for f in sorted(glob.glob(str(RAW / sen / "*.parquet"))):
-        have = set(pq.ParquetFile(f).schema_arrow.names)
-        cols = [c for c in columns if c in have]
-        frames.append(pd.read_parquet(f, columns=["timestamp", *[c for c in cols if c != "timestamp"]]))
-    df = pd.concat(frames, ignore_index=True)
-    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
-    return df[df["timestamp"] <= PILOT_END]
-
-
-def daily_completeness(ts: pd.DatetimeIndex) -> pd.Series:
-    """Share of the 1440 expected one-minute sensor records received, per day."""
-    return (ts.floor("min").to_series().groupby(ts.date).nunique() / 1440.0).clip(upper=1.0)
-
+from validity import CLASSES, classify
 
 def main():
     units = households()
@@ -205,18 +151,14 @@ def main():
     med_v = vol.groupby("unit")["volume_L"].median() / 1000
     print(f"[Feasibility, Fig. 4] median daily gas volume per unit {med_v.min():.2f}-{med_v.max():.2f} m3 "
           f"(median across units {med_v.median():.2f} m3, {len(vol)} valid unit-days)")
-    start = during = measured = filled = 0.0
+    measured = filled = 0.0
     for u in kept:
         c = corrected(u)
         c = c[c["timestamp"] <= PILOT_END]
-        m = missed_litres(c)
-        start += m["start"]; during += m["during"]
         measured += c.loc[c["flow_zero_cal"] >= NO_FLOW_MAX, "flow_zero_cal"].sum()
         filled += c["gap_fill_L"].sum()
-    use = start + during + measured + filled
-    print(f"[Feasibility, Fig. 4] gas filled into sleeps during use (dataset gap_fill_L): {filled / use:.1%} of use")
-    print(f"[Feasibility, Fig. 4] gas still not measured, estimated: {(start + during) / use:.1%} of use; "
-          f"at the start of use {start / use:.1%}, in sleeps during use that fail the fill rule {during / use:.1%}")
+    print(f"[Feasibility, Fig. 4] gas filled into unmeasured time next to use (dataset gap_fill_L): "
+          f"{filled / (measured + filled):.1%} of the total")
     sus_min, flow_min, exp_min = 0, 0, 0
     for u in kept:
         c = corrected(u)
