@@ -49,3 +49,9 @@ def test_make_stats_defines_its_helpers():
         assert callable(getattr(make_stats, name))
     for name in ("FINAL_WEEK_START", "MONTHS_REDUCED"):
         assert hasattr(make_stats, name)
+
+
+def test_units_are_ordered_by_number_everywhere():
+    from make_figures import unit_order
+    assert unit_order(["01020", "01003", "01011", "01001"]) == ["01001", "01003", "01011", "01020"]
+    assert unit_order({"SN_01009", "SN_01002"}) == ["01002", "01009"]

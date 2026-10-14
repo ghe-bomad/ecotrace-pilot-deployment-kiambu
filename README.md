@@ -22,7 +22,7 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 | path | what |
 |---|---|
-| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm), `Figure_3` (daily gas-use duration per household), `Figure_4` (daily gas volume per household) and the supplementary `fig_coverage` |
+| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm), `Figure_3` (daily gas use per household: (a) duration, (b) volume) and the supplementary `fig_coverage` |
 | `validity.py` | the four-check data-validity classification behind Figure 1 and its quoted counts |
 | `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
 | `test_volumes.py` | tests for the daily-volume and unmeasured-gas calculations behind Figure 4 (`python3 -m pytest`) |
@@ -56,8 +56,9 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   sparse for a coverage statistic. Days before a unit's installation are masked
   and painted warm grey, distinct from the completeness ramp, so "no data" cannot
   read as "low completeness".
-- **`Figure_4`** (`fig_volume`): daily gas volume per usable household on valid
-  days, from the dataset's `flow_zero_cal` column (the flow with each unit's
+- **`Figure_3`** (`fig_use`): daily gas use per usable household on valid days.
+  Panel (a) is the gas-use duration (see `validity.py`); panel (b) is the daily
+  gas volume, from the dataset's `flow_zero_cal` column (the flow with each unit's
   zero-flow offset removed; see the dataset's `docs/field_correction.md` §7).
   Uses the dataset's volume definition: one-minute measuring rows at or above
   0.5 L/min (the dataset's no-flow gate) plus `gap_fill_L`, the unmeasured gas
@@ -90,7 +91,7 @@ builds its derived data. `make_figures.py` locates that repository via the
 
 ```bash
 pip install -r requirements.txt
-python3 make_figures.py     # -> figures/Figure_1 to Figure_4 and fig_coverage (.png, .pdf)
+python3 make_figures.py     # -> figures/Figure_1 to Figure_3 and fig_coverage (.png, .pdf)
 python3 -m pytest           # tests for the Figure 4 calculations
 python3 make_stats.py       # prints the paper's quoted statistics, labelled by where they appear
 python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}

@@ -172,12 +172,12 @@ def main():
     # -- gas use (Figure 3): sustained, flowing minutes per valid day, per usable unit
     vd = usable[usable["cls"].str.startswith("valid")]
     med_h = vd.groupby("unit")["use_min"].median() / 60
-    print(f"[Feasibility, Fig. 3] median daily gas-use duration per unit {med_h.min():.1f}-{med_h.max():.1f} h "
+    print(f"[Feasibility, Fig. 3a] median daily gas-use duration per unit {med_h.min():.1f}-{med_h.max():.1f} h "
           f"(median across units {med_h.median():.1f} h)")
     # -- gas volume (Figure 4): litres per valid day from the zero-calibrated flow
     vol = daily_volumes()
     med_v = vol.groupby("unit")["volume_L"].median() / 1000
-    print(f"[Feasibility, Fig. 4] median daily gas volume per unit {med_v.min():.2f}-{med_v.max():.2f} m3 "
+    print(f"[Feasibility, Fig. 3b] median daily gas volume per unit {med_v.min():.2f}-{med_v.max():.2f} m3 "
           f"(median across units {med_v.median():.2f} m3, {len(vol)} valid unit-days)")
     measured = filled = 0.0
     for u in kept:
@@ -185,7 +185,7 @@ def main():
         c = c[c["timestamp"] <= PILOT_END]
         measured += c.loc[c["flow_zero_cal"] >= NO_FLOW_MAX, "flow_zero_cal"].sum()
         filled += c["gap_fill_L"].sum()
-    print(f"[Feasibility, Fig. 4] gas filled into unmeasured time next to use (dataset gap_fill_L): "
+    print(f"[Feasibility, Fig. 3b] gas filled into unmeasured time next to use (dataset gap_fill_L): "
           f"{filled / (measured + filled):.1%} of the total")
     sus_min, flow_min, exp_min = 0, 0, 0
     for u in kept:

@@ -47,8 +47,13 @@ NOT_HOUSEHOLD = {"SN_01005", "SN_01010"}   # ILRI research reactors, excluded on
 # documented field failures; excluded from all statistics.
 FAILED = {"SN_01012", "SN_01018", "SN_01023"}
 PILOT_END = pd.Timestamp("2026-07-19 23:59:59", tz="UTC")   # fixed publication cutoff
-OKABE_BLUE = "#0072B2"
-OKABE_VERM = "#D55E00"
+# Single-series figures (2 and 3) are grayscale; Figure 1 keeps its categorical
+# validity palette.
+INK = "0.15"         # medians, lines
+EDGE = "0.35"        # box edges, whiskers, caps
+FILL = "0.86"        # box fill
+BAND = "0.15"        # Figure 2 interquartile band (drawn with alpha)
+FLIER = "0.55"       # outlier circles
 
 # Perceptually uniform, colour-blind safe, reversed so low completeness is light
 # and high is dark. A deployed-but-silent day is 0.0 and renders at the light end;
@@ -56,6 +61,11 @@ OKABE_VERM = "#D55E00"
 # the ramp) so "no data" can never be misread as "low completeness".
 UPTIME_CMAP = "cividis_r"
 NA_GREY = "#e0ddd6"
+
+
+def unit_order(units) -> list[str]:
+    """Units by ascending number, the order used in Figures 1 and 3."""
+    return sorted(str(u).replace("SN_", "") for u in units)
 
 
 def set_mpl():
@@ -162,8 +172,8 @@ def fig_coverage():
 def fig_validity():
     """Figure 1: validity class of every household unit-day (four checks, see validity.py).
 
-    Rows are sorted by mean daily record completeness, with the three excluded units
-    last. Colours: teal = valid (dark: gas used, light: no use); warm neutrals =
+    Rows are ordered by unit number, as in Figure 3; the three units excluded from
+    the statistics are marked with an asterisk and grey labels. Colours: teal = valid (dark: gas used, light: no use); warm neutrals =
     delivery problems; amber = silent (link up, no data); violet = sensor fault signs.
     The coloured classes were checked for lightness, chroma, colour-vision-deficiency
     and normal-vision separation, and 3:1 contrast on white.
@@ -177,9 +187,8 @@ def fig_validity():
     not_installed = "#F5F3EF"
     df = classify()
     df["day"] = pd.to_datetime(df["day"])
-    comp = df.groupby("unit")["rec"].mean()
-    failed = ["01023", "01012", "01018"]
-    units = [u for u in comp.sort_values(ascending=False).index if u not in failed] + failed
+    failed = {u[3:] for u in FAILED}
+    units = unit_order(df["unit"].unique())
     days = pd.date_range(df["day"].min(), df["day"].max(), freq="D")
     idx = {c: i for i, c in enumerate(colours)}
     M = np.full((len(units), len(days)), np.nan)
@@ -194,7 +203,11 @@ def fig_validity():
     ax.xaxis_date()
     ax.xaxis.set_major_locator(mdates.MonthLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
-    ax.set_yticks(range(len(units))); ax.set_yticklabels(units, fontsize=7)
+    ax.set_yticks(range(len(units)))
+    ax.set_yticklabels([f"{u}*" if u in failed else u for u in units], fontsize=7)
+    for lab, u in zip(ax.get_yticklabels(), units):
+        if u in failed:
+            lab.set_color(FLIER)
     ax.tick_params(axis="y", length=0); ax.minorticks_off()
     ax.set_ylabel(r"monitoring unit"); ax.set_xlabel(r"2026")
     handles = [Patch(facecolor=c, label=l) for l, c in colours.items()]
@@ -205,36 +218,6 @@ def fig_validity():
     fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.27)
     fig.savefig(OUT / "Figure_1.png", bbox_inches=None)
     fig.savefig(OUT / "Figure_1.pdf", bbox_inches=None)
-    plt.close(fig)
-
-
-def fig_use_spread():
-    """Figure 3: daily gas-use duration per usable household (valid days only).
-
-    Use duration is the number of minutes per day in sustained measuring-state runs
-    with corrected flow at or above the 2 L/min deadband (validity.py). The
-    corrected flow is used only as an on/off test, so the figure carries no volume.
-    """
-    from validity import classify
-    df = classify()
-    df = df[~df["unit"].isin([u[3:] for u in FAILED]) & df["cls"].str.startswith("valid")]
-    order = df.groupby("unit")["use_min"].median().sort_values(ascending=False).index.tolist()
-    data = [df.loc[df["unit"] == u, "use_min"].values / 60 for u in order]
-    fig, ax = plt.subplots(figsize=(6.6, 3.4))
-    ax.boxplot(data, widths=0.55, showfliers=True, patch_artist=True,
-               boxprops=dict(facecolor="#cfe0ef", edgecolor=OKABE_BLUE, linewidth=0.8),
-               medianprops=dict(color=OKABE_BLUE, linewidth=1.4),
-               whiskerprops=dict(color=OKABE_BLUE, linewidth=0.8), capprops=dict(color=OKABE_BLUE, linewidth=0.8),
-               flierprops=dict(marker="o", markersize=2.2, markerfacecolor="none", markeredgecolor="0.55",
-                               markeredgewidth=0.5))
-    ax.set_xticks(range(1, len(order) + 1)); ax.set_xticklabels(order, rotation=90, fontsize=7.5)
-    ax.tick_params(axis="x", which="both", length=0, top=False); ax.tick_params(axis="y", right=False)
-    ax.minorticks_off()
-    ax.set_xlabel(r"monitoring unit")
-    ax.set_ylabel(r"daily gas-use duration / h")
-    ax.set_ylim(bottom=0)
-    fig.savefig(OUT / "Figure_3.png")
-    fig.savefig(OUT / "Figure_3.pdf")
     plt.close(fig)
 
 
@@ -280,26 +263,45 @@ def daily_volumes() -> pd.DataFrame:
     return pd.concat(out, ignore_index=True)
 
 
-def fig_volume():
-    """Figure 4: daily gas volume per usable household (valid days), same layout as Figure 3."""
-    vol = daily_volumes()
-    order = vol.groupby("unit")["volume_L"].median().sort_values(ascending=False).index.tolist()
-    data = [vol.loc[vol["unit"] == u, "volume_L"].to_numpy() / 1000 for u in order]
-    fig, ax = plt.subplots(figsize=(6.6, 3.4))
+def _boxes(ax, data, labels):
     ax.boxplot(data, widths=0.55, showfliers=True, patch_artist=True,
-               boxprops=dict(facecolor="#cfe0ef", edgecolor=OKABE_BLUE, linewidth=0.8),
-               medianprops=dict(color=OKABE_BLUE, linewidth=1.4),
-               whiskerprops=dict(color=OKABE_BLUE, linewidth=0.8), capprops=dict(color=OKABE_BLUE, linewidth=0.8),
-               flierprops=dict(marker="o", markersize=2.2, markerfacecolor="none", markeredgecolor="0.55",
+               boxprops=dict(facecolor=FILL, edgecolor=EDGE, linewidth=0.8),
+               medianprops=dict(color=INK, linewidth=1.5),
+               whiskerprops=dict(color=EDGE, linewidth=0.8), capprops=dict(color=EDGE, linewidth=0.8),
+               flierprops=dict(marker="o", markersize=2.2, markerfacecolor="none", markeredgecolor=FLIER,
                                markeredgewidth=0.5))
-    ax.set_xticks(range(1, len(order) + 1)); ax.set_xticklabels(order, rotation=90, fontsize=7.5)
+    ax.set_xticks(range(1, len(labels) + 1)); ax.set_xticklabels(labels, rotation=90, fontsize=7.5)
     ax.tick_params(axis="x", which="both", length=0, top=False); ax.tick_params(axis="y", right=False)
     ax.minorticks_off()
-    ax.set_xlabel(r"monitoring unit")
-    ax.set_ylabel(r"daily gas volume / m$^3$")
     ax.set_ylim(bottom=0)
-    fig.savefig(OUT / "Figure_4.png")
-    fig.savefig(OUT / "Figure_4.pdf")
+
+
+def fig_use():
+    """Figure 3: daily gas use per usable household on valid days.
+
+    (a) Duration: minutes per day in sustained measuring-state runs with corrected
+    flow at or above the 2 L/min deadband (validity.py), as hours; the flow is an
+    on/off test here. (b) Volume: the dataset's gap-filled, zero-calibrated volume
+    (``daily_volumes``). Units in ascending number, as in Figure 1.
+    """
+    from validity import classify
+    df = classify()
+    df = df[~df["unit"].isin([u[3:] for u in FAILED]) & df["cls"].str.startswith("valid")]
+    vol = daily_volumes()
+    order = unit_order(df["unit"].unique())
+    duration = [df.loc[df["unit"] == u, "use_min"].to_numpy() / 60 for u in order]
+    volume = [vol.loc[vol["unit"] == u, "volume_L"].to_numpy() / 1000 for u in order]
+    fig, (ax_a, ax_b) = plt.subplots(2, 1, figsize=(6.6, 5.8), sharex=True)
+    _boxes(ax_a, duration, order)
+    _boxes(ax_b, volume, order)
+    ax_a.set_ylabel(r"gas-use duration / h day$^{-1}$")
+    ax_b.set_ylabel(r"gas volume / m$^3$ day$^{-1}$")
+    ax_b.set_xlabel(r"monitoring unit")
+    for ax, lab in ((ax_a, "(a)"), (ax_b, "(b)")):
+        ax.text(0.0, 1.02, lab, transform=ax.transAxes, ha="left", va="bottom", fontsize=9)
+    fig.align_ylabels((ax_a, ax_b))
+    fig.savefig(OUT / "Figure_3.png")
+    fig.savefig(OUT / "Figure_3.pdf")
     plt.close(fig)
 
 
@@ -329,13 +331,13 @@ def fig_diurnal(sen="SN_01015", min_day_records=20):
 
     fig, ax = plt.subplots(figsize=(6.2, 3.4))
     ax.fill_between(x, lo, hi,
-                    color=OKABE_BLUE,
-                    alpha=0.16,
+                    color=BAND,
+                    alpha=0.15,
                     lw=0,
                     label=r"25--75th percentile across days",
                     zorder=1)
     ax.plot(x, mean,
-            color=OKABE_BLUE,
+            color=INK,
             lw=1.5,
             #marker="o", ms=3.2,
             label=fr"mean of {ndays} days",
@@ -369,5 +371,4 @@ if __name__ == "__main__":
     fig_validity()
     fig_coverage()
     fig_diurnal()
-    fig_use_spread()
-    fig_volume()
+    fig_use()
