@@ -20,6 +20,27 @@ from make_figures import (RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, NO_FLOW_MAX, lo
                           corrected, daily_volumes)
 from validity import CLASSES, classify
 
+def households() -> list[str]:
+    return sorted({Path(d).name for d in glob.glob(str(RAW / "SN_*"))} - NOT_HOUSEHOLD)
+
+
+def load_all(sen: str, columns: list[str]) -> pd.DataFrame:
+    """Every row (sensor and heartbeat) with the requested columns that exist."""
+    frames = []
+    for f in sorted(glob.glob(str(RAW / sen / "*.parquet"))):
+        have = set(pq.ParquetFile(f).schema_arrow.names)
+        cols = [c for c in columns if c in have]
+        frames.append(pd.read_parquet(f, columns=["timestamp", *[c for c in cols if c != "timestamp"]]))
+    df = pd.concat(frames, ignore_index=True)
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+    return df[df["timestamp"] <= PILOT_END]
+
+
+def daily_completeness(ts: pd.DatetimeIndex) -> pd.Series:
+    """Share of the 1440 expected one-minute sensor records received, per day."""
+    return (ts.floor("min").to_series().groupby(ts.date).nunique() / 1440.0).clip(upper=1.0)
+
+
 def main():
     units = households()
     ts = {s: load_sensor_times(s) for s in units}

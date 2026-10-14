@@ -40,3 +40,10 @@ def test_daily_volume_ignores_idle_rows_below_the_no_flow_gate():
     # a zero-calibrated unit at its zero still reads ~0.02 L/min; that is not gas use
     c = _rows(["2026-03-01T10:00Z", "2026-03-01T10:01Z", "2026-03-01T10:02Z"], [5.0, 0.03, 2.0])
     assert daily_volume(c).sum() == 7.0
+
+
+def test_make_stats_defines_its_helpers():
+    """Guards against the helpers being cut out again: main() needs them."""
+    import make_stats
+    for name in ("households", "load_all", "daily_completeness", "main"):
+        assert callable(getattr(make_stats, name))
