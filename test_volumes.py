@@ -47,3 +47,5 @@ def test_make_stats_defines_its_helpers():
     import make_stats
     for name in ("households", "load_all", "daily_completeness", "main"):
         assert callable(getattr(make_stats, name))
+    for name in ("FINAL_WEEK_START", "MONTHS_REDUCED"):
+        assert hasattr(make_stats, name)

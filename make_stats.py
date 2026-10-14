@@ -20,6 +20,13 @@ from make_figures import (RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, NO_FLOW_MAX, lo
                           corrected, daily_volumes)
 from validity import CLASSES, classify
 
+# Inclusion rule: a unit is "usable" if it was still returning sensor records in
+# the final week of the pilot. FAILED in make_figures.py must equal the set this
+# rule excludes; main() asserts it.
+FINAL_WEEK_START = PILOT_END.normalize() - pd.Timedelta(days=6)
+MONTHS_REDUCED = ["2026-05", "2026-06", "2026-07"]   # 01013's reduced-completeness months
+
+
 def households() -> list[str]:
     return sorted({Path(d).name for d in glob.glob(str(RAW / "SN_*"))} - NOT_HOUSEHOLD)
 
