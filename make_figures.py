@@ -279,27 +279,27 @@ def _boxes(ax, data, labels):
 def fig_use():
     """Figure 3: daily gas use per usable household on valid days.
 
-    (a) Duration: minutes per day in sustained measuring-state runs with corrected
-    flow at or above the 2 L/min deadband (validity.py), as hours; the flow is an
-    on/off test here. (b) Volume: the dataset's gap-filled, zero-calibrated volume
-    (``daily_volumes``). Units in ascending number, as in Figure 1.
+    Top: volume, the dataset's gap-filled, zero-calibrated volume
+    (``daily_volumes``). Bottom: cooking duration, the minutes per day in
+    sustained measuring-state runs with corrected flow at or above the 2 L/min
+    deadband (validity.py), as hours; the flow is an on/off test here. The two
+    panels share the unit axis; units in ascending number, as in Figure 1.
     """
     from validity import classify
     df = classify()
     df = df[~df["unit"].isin([u[3:] for u in FAILED]) & df["cls"].str.startswith("valid")]
     vol = daily_volumes()
     order = unit_order(df["unit"].unique())
-    duration = [df.loc[df["unit"] == u, "use_min"].to_numpy() / 60 for u in order]
     volume = [vol.loc[vol["unit"] == u, "volume_L"].to_numpy() / 1000 for u in order]
-    fig, (ax_a, ax_b) = plt.subplots(2, 1, figsize=(6.6, 5.8), sharex=True)
-    _boxes(ax_a, duration, order)
-    _boxes(ax_b, volume, order)
-    ax_a.set_ylabel(r"gas-use duration / h day$^{-1}$")
-    ax_b.set_ylabel(r"gas volume / m$^3$ day$^{-1}$")
-    ax_b.set_xlabel(r"monitoring unit")
-    for ax, lab in ((ax_a, "(a)"), (ax_b, "(b)")):
-        ax.text(0.0, 1.02, lab, transform=ax.transAxes, ha="left", va="bottom", fontsize=9)
-    fig.align_ylabels((ax_a, ax_b))
+    duration = [df.loc[df["unit"] == u, "use_min"].to_numpy() / 60 for u in order]
+    fig, (ax_v, ax_d) = plt.subplots(2, 1, figsize=(6.6, 5.4), sharex=True,
+                                     gridspec_kw={"hspace": 0.06})
+    _boxes(ax_v, volume, order)
+    _boxes(ax_d, duration, order)
+    ax_v.set_ylabel(r"gas volume / m$^3$ day$^{-1}$")
+    ax_d.set_ylabel(r"cooking duration / h day$^{-1}$")
+    ax_d.set_xlabel(r"monitoring unit")
+    fig.align_ylabels((ax_v, ax_d))
     fig.savefig(OUT / "Figure_3.png")
     fig.savefig(OUT / "Figure_3.pdf")
     plt.close(fig)

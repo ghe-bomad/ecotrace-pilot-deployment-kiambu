@@ -22,7 +22,7 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 | path | what |
 |---|---|
-| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm), `Figure_3` (daily gas use per household: (a) duration, (b) volume) and the supplementary `fig_coverage` |
+| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm), `Figure_3` (daily gas use per household: volume on top, cooking duration below) and the supplementary `fig_coverage` |
 | `validity.py` | the four-check data-validity classification behind Figure 1 and its quoted counts |
 | `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
 | `test_volumes.py` | tests for the daily-volume and unmeasured-gas calculations behind Figure 4 (`python3 -m pytest`) |
@@ -57,10 +57,10 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   and painted warm grey, distinct from the completeness ramp, so "no data" cannot
   read as "low completeness".
 - **`Figure_3`** (`fig_use`): daily gas use per usable household on valid days.
-  Panel (a) is the gas-use duration (see `validity.py`); panel (b) is the daily
-  gas volume, from the dataset's `flow_zero_cal` column (the flow with each unit's
-  zero-flow offset removed; see the dataset's `docs/field_correction.md` §7).
-  Uses the dataset's volume definition: one-minute measuring rows at or above
+  The top panel is the daily gas volume; the bottom panel is the cooking duration
+  (see `validity.py`). The volume comes from the dataset's `flow_zero_cal` column
+  (the flow with each unit's zero-flow offset removed; see the dataset's
+  `docs/field_correction.md` §7) and uses the dataset's volume definition: one-minute measuring rows at or above
   0.5 L/min (the dataset's no-flow gate) plus `gap_fill_L`, the unmeasured gas
   the dataset fills in next to rows in use, summed per UTC day, the same day key
   `validity.py` uses. The interiors of gaps longer than one sleep cycle are not
