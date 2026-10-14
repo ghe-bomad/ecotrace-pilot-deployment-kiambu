@@ -88,12 +88,16 @@ def panel_pilot(ax):
 
 
 def panel_worked(fig, ax):
-    """Two headline numbers and the measured cooking rhythm (mean of Figure 2's daily profiles)."""
+    """Two headline numbers and the measured cooking rhythm (mean of Figure 2's daily profiles).
+
+    The volume is the median of the per-household median daily volumes behind
+    Figure 3 (make_stats.py, "[Feasibility, Fig. 3 top]").
+    """
     x0 = COLS[1][0]
-    for y, big, small in [(1.90, r"17/20", r"units usable,\\through floods"),
-                          (1.37, r"83\,\%", r"median telemetry\\completeness")]:
+    for y, big, small, dx in [(1.90, r"17/20", r"units usable,\\83\,\% completeness", 0.90),
+                              (1.37, r"1.35\,m$^3$", r"median daily\\gas volume", 1.12)]:
         ax.text(x0, y, rf"\textbf{{{big}}}", fontsize=19, va="center")
-        ax.text(x0 + 0.90, y, rf"\begin{{tabular}}{{@{{}}l}}{small}\end{{tabular}}", fontsize=9,
+        ax.text(x0 + dx, y, rf"\begin{{tabular}}{{@{{}}l}}{small}\end{{tabular}}", fontsize=9,
                 va="center", color=INK2)
     mean = daily_profiles().mean(axis=0).values
     axd = fig.add_axes([(x0 + 0.02) / W, 0.30 / H, 1.76 / W, 0.50 / H])
