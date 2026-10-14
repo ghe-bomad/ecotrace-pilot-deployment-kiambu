@@ -16,17 +16,20 @@ import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
-from make_figures import RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, load_sensor_times, corrected, daily_volumes
+from make_figures import (RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, NO_FLOW_MAX, load_sensor_times,
+                          corrected, daily_volumes)
 from validity import CLASSES, FLOW_MIN, classify
 
-# Gas not measured while the unit sleeps (220 s) and warms up (50 s). A gap of one
-# sleep cycle between state-0 rows (within WAKE_GAP_S) marks a wake-up; longer gaps
-# are data gaps. A wake-up into flowing gas after a quiet row is the start of use:
-# with starts uniform over the cycle, half of it is lost on average. A wake-up into
-# flowing gas after a flowing row means the unit slept during use, and the whole
-# cycle is lost. Both are valued at the flow of the first measured minute.
-CYCLE_S = 270
-MISSED_PER_START_S = CYCLE_S / 2
+# Gas not measured while the unit sleeps and warms up. A gap of one sleep cycle
+# between state-0 rows (within WAKE_GAP_S; in practice 300 s) marks a wake-up;
+# longer gaps are data gaps. Each row already stands for its own minute, so
+# gap - ROW_S seconds are unmeasured. A wake-up into flowing gas after a quiet row
+# is the start of use: with starts uniform over that time, half of it is lost on
+# average. A wake-up into flowing gas after a flowing row means the unit slept
+# during use, and all of it is lost. Both are valued at the flow of the first
+# measured minute. Single sleep cycles only: wake-ups after longer gaps are not
+# counted.
+ROW_S = 60
 WAKE_GAP_S = (120, 330)
 
 
@@ -37,8 +40,9 @@ def missed_litres(c: pd.DataFrame) -> dict:
     q = c["flow_zero_cal"]
     wake = gap.gt(WAKE_GAP_S[0]) & gap.le(WAKE_GAP_S[1]) & (q >= FLOW_MIN)
     during = wake & (q.shift() >= FLOW_MIN)
-    return {"start": float((q[wake & ~during] * MISSED_PER_START_S / 60).sum()),
-            "during": float((q[during] * CYCLE_S / 60).sum())}
+    unmeasured_min = (gap - ROW_S) / 60
+    return {"start": float((q * unmeasured_min / 2)[wake & ~during].sum()),
+            "during": float((q * unmeasured_min)[during].sum())}
 
 # Inclusion rule: a unit is "usable" if it was still returning sensor records in
 # the final week of the pilot. FAILED in make_figures.py must equal the set this
@@ -205,7 +209,7 @@ def main():
         c = c[c["timestamp"] <= PILOT_END]
         m = missed_litres(c)
         start += m["start"]; during += m["during"]
-        total += c["flow_zero_cal"].sum()
+        total += c.loc[c["flow_zero_cal"] >= NO_FLOW_MAX, "flow_zero_cal"].sum()
     use = start + during + total
     print(f"[Feasibility, Fig. 4] gas not measured (sleep and warm-up), estimated: {(start + during) / use:.1%} "
           f"of use; at the start of use {start / use:.1%}, while the unit slept during use {during / use:.1%}")

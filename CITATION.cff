@@ -5,15 +5,16 @@ abstract: >-
   Analysis and figure-generating code for the installation and feasibility
   pilot paper arising from the ecoTrace household-biogas monitoring pilot in
   Kiambu County, Kenya. Includes the publication figure scripts for the
-  telemetry-completeness and daily use-rhythm figures, a script that
+  data-validity, daily use-rhythm, gas-use duration and daily gas-volume
+  figures (the last from the dataset's zero-calibrated flow), a script that
   reproduces every statistic the paper quotes, the graphical abstract, and the
   manually produced installation-site maps. The raw data and the derivation
   code live in the companion dataset (see references); this repository reads
   the derived data from it and does not duplicate it.
 type: software
 license: Apache-2.0
-version: 1.2.0
-date-released: "2026-09-30"
+version: 1.3.0
+date-released: "2026-10-14"
 doi: 10.5281/zenodo.22233280   # concept DOI: always resolves to the newest version.
 # Cite the version DOI of the release you actually used; see the Zenodo record.
 repository-code: "https://github.com/ghe-bomad/ecotrace-pilot-deployment-kiambu"

@@ -238,14 +238,20 @@ def fig_use_spread():
     plt.close(fig)
 
 
+# Rows below the dataset's no-flow gate are idle: a unit at its zero still reads
+# about 0.02 L/min on the King's-law inverse, which is not gas use.
+NO_FLOW_MAX = 0.5   # L/min
+
+
 def daily_volume(c: pd.DataFrame) -> pd.Series:
     """Litres of gas per UTC day from one unit's state-0 rows.
 
     Rows are one minute apart while the unit measures, so each row's
-    ``flow_zero_cal`` [L/min] is a litre count. Days are UTC dates, the keys
-    validity.py classifies, so volumes join the valid days directly.
+    ``flow_zero_cal`` [L/min] is a litre count; rows below NO_FLOW_MAX are idle
+    and not counted. Days are UTC dates, the keys validity.py classifies, so
+    volumes join the valid days directly.
     """
-    c = c[c["timestamp"] <= PILOT_END]
+    c = c[(c["timestamp"] <= PILOT_END) & (c["flow_zero_cal"] >= NO_FLOW_MAX)]
     return c["flow_zero_cal"].groupby(c["timestamp"].dt.date).sum()
 
 

@@ -59,8 +59,8 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 - **`Figure_4`** (`fig_volume`): daily gas volume per usable household on valid
   days, from the dataset's `flow_zero_cal` column (the flow with each unit's
   zero-flow offset removed; see the dataset's `docs/field_correction.md` §7).
-  One-minute measuring rows are summed as litres per UTC day, the same day key
-  `validity.py` uses. The volumes are a lower bound: gas flowing while the unit
+  One-minute measuring rows at or above 0.5 L/min (the dataset's no-flow gate)
+  are summed as litres per UTC day, the same day key `validity.py` uses. The volumes are a lower bound: gas flowing while the unit
   sleeps or warms up is not measured. `make_stats.py` estimates that share,
   separately for the start of use and for sleeps during use.
 - **`fig_diurnal`** (Figure 2): one household's normalised daily use rhythm.
