@@ -5,16 +5,18 @@ abstract: >-
   Analysis and figure-generating code for the installation and feasibility
   pilot paper arising from the ecoTrace household-biogas monitoring pilot in
   Kiambu County, Kenya. Includes the publication figure scripts for the
-  data-validity, daily use-rhythm, gas-use duration and daily gas-volume
-  figures (the last from the dataset's zero-calibrated flow), a script that
-  reproduces every statistic the paper quotes, the graphical abstract, and the
-  manually produced installation-site maps. The raw data and the derivation
-  code live in the companion dataset (see references); this repository reads
-  the derived data from it and does not duplicate it.
+  data-validity, daily use-rhythm, daily gas-use (volume from the dataset's
+  zero-calibrated, gap-filled flow, and cooking duration) and reference
+  gas-composition figures, a script that reproduces every statistic the paper
+  quotes, the graphical abstract, and the installation-site map (drawn with
+  Claude Design from the authors' GPS records, with site positions jittered).
+  The raw data and the derivation code live in the companion dataset (see
+  references); this repository reads the derived data from it and does not
+  duplicate it.
 type: software
 license: Apache-2.0
 version: 1.3.0
-date-released: "2026-10-14"
+date-released: "2026-10-15"
 doi: 10.5281/zenodo.22233280   # concept DOI: always resolves to the newest version.
 # Cite the version DOI of the release you actually used; see the Zenodo record.
 repository-code: "https://github.com/ghe-bomad/ecotrace-pilot-deployment-kiambu"
@@ -97,4 +99,5 @@ references:
         orcid: "https://orcid.org/0000-0002-2095-9724"
         affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
     doi: 10.5281/zenodo.22232789
+    version: "1.1.0"
     notes: "Companion dataset (ecotrace-pilot-data-kiambu). This analysis reads its derived data."
