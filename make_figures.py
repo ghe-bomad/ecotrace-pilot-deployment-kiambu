@@ -15,7 +15,7 @@ import os
 # sibling checkout next to this repo. fig_validity reads the raw Parquet (link and
 # record checks need every row); fig_diurnal and fig_use read the derived CSVs, so
 # they use the canonical corrected flow rather than re-deriving it here. Figure 1,
-# the map of installation sites, is produced manually (see figures/README.md).
+# the map of installation sites, was drawn with Claude Design (see figures/README.md).
 _env = os.environ.get("ECOTRACE_DATA")
 if _env:
     DATA_REPO = Path(_env).expanduser().resolve()

@@ -22,23 +22,24 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 | path | what |
 |---|---|
-| `make_figures.py` | generator for `Figure_2` (data validity), `Figure_3` (use rhythm), `Figure_4` (daily gas use per household: volume on top, cooking duration below) and `Figure_5` (reference gas composition per digester); `Figure_1`, the site map, is produced manually |
+| `make_figures.py` | generator for `Figure_2` (data validity), `Figure_3` (use rhythm), `Figure_4` (daily gas use per household: volume on top, cooking duration below) and `Figure_5` (reference gas composition per digester); `Figure_1`, the site map, was drawn with Claude Design |
 | `validity.py` | the four-check data-validity classification behind Figure 2 and its quoted counts |
 | `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
 | `test_volumes.py` | tests for the daily-volume calculation behind Figure 4 and the shared unit order (`python3 -m pytest`) |
 | `test_composition.py` | tests for the gas-composition table behind Figure 5 |
 | `make_graphical_abstract.py` | generator for the journal's graphical abstract |
 | `scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
-| `figures/` | the paper's figures, including the manually produced site map (Figure 1) |
+| `figures/` | the paper's figures, including the site map drawn with Claude Design (Figure 1) |
 | `scripts/get_data.sh` | clones and derives the companion dataset |
 | `badges/` | the README badges, committed as SVG rather than fetched at render time |
 
 ## The figures
 
 - **`Figure_1.png`**: map of the 20 installation sites in Kiambu County. Site
-  positions are jittered to protect household privacy. Produced manually, not
-  by code in this repository: household GPS is not part of the published
-  dataset, so the map cannot be regenerated from public data.
+  positions are from the authors' GPS records, jittered to protect household
+  privacy. Drawn with Claude Design (Anthropic), not by code in this
+  repository: household GPS is not part of the published dataset, so the map
+  cannot be regenerated from public data.
 - **`Figure_2`** (`fig_validity`): the validity class of every household unit-day.
   `validity.py` applies four checks in order: link (connectivity heartbeats
   received), data (one-minute sensor records received), sensor health (no more
@@ -95,7 +96,7 @@ builds its derived data. `make_figures.py` locates that repository via the
 
 ```bash
 pip install -r requirements.txt
-python3 make_figures.py     # -> figures/Figure_2 to Figure_5 (.png, .pdf); Figure_1 is the manual map
+python3 make_figures.py     # -> figures/Figure_2 to Figure_5 (.png, .pdf); Figure_1 is drawn outside this repo
 python3 -m pytest           # tests for the Figure 4 volume, the unit order and the Figure 5 table
 python3 make_stats.py       # prints the paper's quoted statistics, labelled by where they appear
 python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
