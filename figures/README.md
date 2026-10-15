@@ -8,6 +8,7 @@ The paper's figures, numbered as in the manuscript.
 | `Figure_2.{png,pdf}` | `../make_figures.py` `fig_validity` (data validity per unit-day) |
 | `Figure_3.{png,pdf}` | `../make_figures.py` `fig_diurnal` (one household's daily use rhythm) |
 | `Figure_4.{png,pdf}` | `../make_figures.py` `fig_use` (daily gas volume, top, and cooking duration, bottom, per household) |
+| `Figure_5.{png,pdf}` | `../make_figures.py` `fig_composition` (reference gas composition per household digester: CH4 and CO2, top; H2S before and after the filter, bottom) |
 | `graphical_abstract.{svg,pdf}` | `../make_graphical_abstract.py` (journal graphical abstract, vector) |
 
 The generated figures are committed as the paper versions; re-running

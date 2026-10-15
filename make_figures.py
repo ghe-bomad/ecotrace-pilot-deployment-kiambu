@@ -55,6 +55,53 @@ FILL = "0.86"        # box fill
 BAND = "0.15"        # Figure 3 interquartile band (drawn with alpha)
 FLIER = "0.55"       # outlier circles
 
+# Dräger X-am 8000 upper H2S range limit: readings logged as "max" were at or above it.
+H2S_RANGE_PPM = 100
+# Figure 5: one colour per series (Okabe-Ito, checked for colour-vision deficiency),
+# all circles with a black outline.
+COMPOSITION_COLOURS = {"CH4": "#E69F00", "CO2": "#56B4E9",
+                       "H2S_raw": "#D55E00", "H2S_filtered": "#009E73"}
+
+
+def composition_table(raw: dict | None = None) -> pd.DataFrame:
+    """Reference gas composition per household unit, from the Dräger spot measurements.
+
+    ``raw`` is the dataset's ``data/biogas_composition.json`` (read when None):
+    ``{"01001": [measurement, ...], ...}``. Only household units are kept. The
+    main composition (CH4, CO2, O2) comes from the raw-gas reading, or from the
+    only reading where a unit was measured after its H2S filter alone. H2S is
+    kept apart before (``H2S_raw``) and after (``H2S_filtered``) the filter.
+    Readings logged as "max" are set to the analyser's range limit and flagged
+    in ``*_sat``. CO (read near zero) and NH3 are not reported.
+    """
+    import json
+    if raw is None:
+        raw = json.load(open(DATA_REPO / "data" / "biogas_composition.json"))
+
+    def num(v, limit=None):
+        if v == "max":
+            return float(limit), True
+        try:
+            return float(v), False
+        except (TypeError, ValueError):
+            return float("nan"), False
+
+    rows = []
+    households = {f"SN_{k}" for k in raw if k.isdigit()} - NOT_HOUSEHOLD
+    for unit in unit_order(households):
+        ms = raw[unit]
+        before = [m for m in ms if str(m.get("after_H2S_removal")) == "False"]
+        after = [m for m in ms if str(m.get("after_H2S_removal")) == "True"]
+        main = (before or after)[0]
+        h2s_raw, h2s_raw_sat = num(before[0]["H2S_ppm"], H2S_RANGE_PPM) if before else (float("nan"), False)
+        h2s_f, h2s_f_sat = num(after[0]["H2S_ppm"], H2S_RANGE_PPM) if after else (float("nan"), False)
+        rows.append({"unit": unit, "CH4": num(main["CH4_vol_perc"])[0], "CO2": num(main["CO2_vol_perc"])[0],
+                     "O2": num(main.get("O2_vol_perc"))[0],
+                     "H2S_raw": h2s_raw, "H2S_raw_sat": h2s_raw_sat,
+                     "H2S_filtered": h2s_f, "H2S_filtered_sat": h2s_f_sat})
+    return pd.DataFrame(rows)
+
+
 def unit_order(units) -> list[str]:
     """Units by ascending number, the order used in Figures 2 and 4."""
     return sorted(str(u).replace("SN_", "") for u in units)
@@ -234,6 +281,56 @@ def fig_use():
     plt.close(fig)
 
 
+def fig_composition(t: pd.DataFrame | None = None):
+    """Figure 5: reference biogas composition per household digester (Dräger X-am 8000).
+
+    Top: CH4 and CO2 in vol-%. Bottom: H2S in ppm before and after the
+    household's H2S filter, side by side at each unit; the dashed line is the
+    analyser's upper range limit, and readings there were at or above it. One
+    legend in a single row below the unit axis. ``t`` is ``composition_table()``
+    (read when None).
+    """
+    from matplotlib.lines import Line2D
+    t = composition_table() if t is None else t
+    x = np.arange(len(t))
+    series = {"CH4": r"CH$_4$", "CO2": r"CO$_2$",
+              "H2S_raw": r"H$_2$S, raw gas", "H2S_filtered": r"H$_2$S, after filter"}
+    dodge = {"CH4": 0.0, "CO2": 0.0, "H2S_raw": -0.14, "H2S_filtered": 0.14}
+    fig, (ax_v, ax_p) = plt.subplots(2, 1, figsize=(6.6, 6.2), sharex=True,
+                                     gridspec_kw={"hspace": 0.06})
+    ax_p.axhline(H2S_RANGE_PPM, color="0.45", lw=0.7, ls="--", zorder=1)
+    ax_p.text(len(t) * 0.62, H2S_RANGE_PPM - 3, r"H$_2$S range limit", color="0.35",
+              fontsize=9, ha="center", va="top")
+    for col, label in series.items():
+        ax = ax_v if col in ("CH4", "CO2") else ax_p
+        ax.plot(x + dodge[col], t[col], "o", ms=5.5, mfc=COMPOSITION_COLOURS[col],
+                mec="black", mew=0.6, ls="none", zorder=3, clip_on=False)
+    ax_v.set_ylim(30, 62)
+    ax_p.set_ylim(-5, 110)
+    ax_v.set_ylabel(r"volumetric concentration / vol-\%")
+    ax_p.set_ylabel(r"volumetric concentration / ppm")
+    ax_p.set_xlabel(r"monitoring unit")
+    for ax in (ax_v, ax_p):
+        ax.set_xticks(x)
+        ax.set_xlim(-0.6, len(t) - 0.4)
+        ax.tick_params(axis="x", which="minor", bottom=False, top=False)
+        ax.tick_params(axis="x", which="major", bottom=True, top=True)
+    ax_p.set_xticklabels(t["unit"], rotation=90, fontsize=8)
+    fig.align_ylabels((ax_v, ax_p))
+    handles = [Line2D([], [], marker="o", ms=5.5, mfc=COMPOSITION_COLOURS[c], mec="black",
+                      mew=0.6, ls="none") for c in series]
+    # legend in one row, its top just below the axis title
+    fig.canvas.draw()
+    below = ax_p.xaxis.label.get_window_extent().transformed(fig.transFigure.inverted()).y0
+    fig.legend(handles, list(series.values()), loc="upper center", ncol=4,
+               bbox_to_anchor=(0.5, below - 0.004), fontsize=9.5, frameon=True,
+               fancybox=False, edgecolor="black", framealpha=1.0,
+               handletextpad=0.2, columnspacing=1.4)
+    fig.savefig(OUT / "Figure_5.png")
+    fig.savefig(OUT / "Figure_5.pdf")
+    plt.close(fig)
+
+
 def daily_profiles(sen="SN_01015", min_day_records=20) -> pd.DataFrame:
     """One row per day, 24 hour-of-day columns, each day normalised to sum to 100%."""
     df = corrected(sen)
@@ -300,3 +397,4 @@ if __name__ == "__main__":
     fig_validity()
     fig_diurnal()
     fig_use()
+    fig_composition()

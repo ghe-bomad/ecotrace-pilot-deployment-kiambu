@@ -22,10 +22,11 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 | path | what |
 |---|---|
-| `make_figures.py` | generator for `Figure_2` (data validity), `Figure_3` (use rhythm) and `Figure_4` (daily gas use per household: volume on top, cooking duration below); `Figure_1`, the site map, is produced manually |
+| `make_figures.py` | generator for `Figure_2` (data validity), `Figure_3` (use rhythm), `Figure_4` (daily gas use per household: volume on top, cooking duration below) and `Figure_5` (reference gas composition per digester); `Figure_1`, the site map, is produced manually |
 | `validity.py` | the four-check data-validity classification behind Figure 2 and its quoted counts |
 | `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
 | `test_volumes.py` | tests for the daily-volume calculation behind Figure 4 and the shared unit order (`python3 -m pytest`) |
+| `test_composition.py` | tests for the gas-composition table behind Figure 5 |
 | `make_graphical_abstract.py` | generator for the journal's graphical abstract |
 | `scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
 | `figures/` | the paper's figures, including the manually produced site map (Figure 1) |
@@ -68,6 +69,14 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   to rows in use, summed per UTC day, the same day key `validity.py` uses. The
   interiors of gaps longer than one sleep cycle are not filled. `make_stats.py`
   reports the filled share.
+- **`Figure_5`** (`fig_composition`): the reference gas composition of each
+  household digester, from the dataset's `biogas_composition.json` (Dräger
+  X-am 8000 spot readings, treated as ground truth). Top: CH4 and CO2 in vol-%.
+  Bottom: H2S in ppm in the raw gas and after the household's H2S filter,
+  where each was measured. H2S readings logged as `"max"` are drawn at the
+  analyser's 100 ppm upper range limit (dashed line). CO and NH3 are not shown.
+  The CH4, CO2 and O2 values come from the raw-gas reading, or from the
+  after-filter reading for the four units measured only there.
 
 ## Getting the data
 
@@ -85,8 +94,8 @@ builds its derived data. `make_figures.py` locates that repository via the
 
 ```bash
 pip install -r requirements.txt
-python3 make_figures.py     # -> figures/Figure_2 to Figure_4 (.png, .pdf); Figure_1 is the manual map
-python3 -m pytest           # tests for the Figure 4 volume and the unit order
+python3 make_figures.py     # -> figures/Figure_2 to Figure_5 (.png, .pdf); Figure_1 is the manual map
+python3 -m pytest           # tests for the Figure 4 volume, the unit order and the Figure 5 table
 python3 make_stats.py       # prints the paper's quoted statistics, labelled by where they appear
 python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
 ```

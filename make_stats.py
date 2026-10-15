@@ -9,15 +9,14 @@ drift between the figures and the text.
 """
 from __future__ import annotations
 import glob
-import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
 
-from make_figures import (RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, NO_FLOW_MAX, load_sensor_times,
-                          corrected, daily_volumes)
+from make_figures import (RAW, NOT_HOUSEHOLD, FAILED, PILOT_END, NO_FLOW_MAX, H2S_RANGE_PPM,
+                          load_sensor_times, corrected, daily_volumes, composition_table)
 from validity import CLASSES, classify
 
 # Inclusion rule: a unit is "usable" if it was still returning sensor records in
@@ -118,23 +117,21 @@ def main():
         print(f"[Feasibility] {u[3:]} stopped {ts[u].max().date()}; battery at last heartbeat "
               f"{b['battery_volt'].iloc[-1]:.2f} V ({b['timestamp'].iloc[-1]:%Y-%m-%d %H:%M} UTC)")
 
-    # -- methane fraction vs the Draeger X-am 8000 spot reference, on this paper's
-    #    usable units: per-unit median of the dataset's no-flow comp_corrected
-    #    against the mean reference reading taken before H2S removal (the method
-    #    of the dataset's field_correction.md, restricted to the 17 units here)
-    gt = json.load(open(RAW.parent / "biogas_composition.json"))
-    ref = {f"SN_{k}": np.mean([float(m["CH4_vol_perc"]) for m in v if m.get("after_H2S_removal") != "True"])
-           for k, v in gt.items() if any(m.get("after_H2S_removal") != "True" for m in v)}
-    pairs = []
-    for u in kept:
-        cc = corrected(u)["comp_corrected"].dropna() if u in ref else pd.Series(dtype=float)
-        if len(cc) >= 50:
-            pairs.append((cc.median() * 100, ref[u]))
-    pred, gt_ch4 = np.array(pairs).T
-    resid = pred - gt_ch4
-    print(f"[Methods] CH4 vs reference on {len(pairs)} usable units: bias {resid.mean():+.1f} vol-%, "
-          f"RMSE {np.sqrt((resid ** 2).mean()):.1f} vol-%, r {np.corrcoef(pred, gt_ch4)[0, 1]:.2f}; "
-          f"reference range {gt_ch4.min():.0f}-{gt_ch4.max():.0f} vol-%")
+    # -- reference gas composition (Figure 5): Draeger X-am 8000 spot readings on
+    #    the household digesters, treated as ground truth (see composition_table)
+    comp = composition_table()
+    raw_h2s = comp["H2S_raw"].dropna()
+    filt = comp["H2S_filtered"].dropna()
+    both = comp.dropna(subset=["H2S_raw", "H2S_filtered"])
+    print(f"[Results, Fig. 5] {len(comp)} household digesters: CH4 {comp.CH4.min():.0f}-{comp.CH4.max():.0f} vol-% "
+          f"(median {comp.CH4.median():.0f}), CO2 {comp.CO2.min():.0f}-{comp.CO2.max():.0f} vol-% "
+          f"(median {comp.CO2.median():.1f}), O2 at most {comp.O2.max():.1f} vol-%")
+    print(f"[Results, Fig. 5] H2S in raw gas on {len(raw_h2s)} digesters: {int((raw_h2s >= H2S_RANGE_PPM).sum())} "
+          f"at or above the {H2S_RANGE_PPM} ppm range limit, the others {raw_h2s[raw_h2s < H2S_RANGE_PPM].min():.1f}-"
+          f"{raw_h2s[raw_h2s < H2S_RANGE_PPM].max():.1f} ppm")
+    print(f"[Results, Fig. 5] H2S after the filter on {len(filt)} digesters: {filt.min():.0f}-{filt.max():.1f} ppm "
+          f"(median {filt.median():.1f}); measured before and after on {len(both)}, lower after on "
+          f"{int((both.H2S_filtered < both.H2S_raw).sum())}")
 
     # -- data validity (Figure 2): four checks per unit-day, see validity.py
     v = classify()
