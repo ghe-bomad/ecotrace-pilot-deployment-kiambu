@@ -73,7 +73,8 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   household digester, from the dataset's `biogas_composition.json` (Dräger
   X-am 8000 spot readings, treated as ground truth). Top: CH4 and CO2 in vol-%.
   Bottom: H2S in ppm in the raw gas and after the household's H2S filter,
-  where each was measured. H2S readings logged as `"max"` are drawn at the
+  where each was measured, on one vertical per unit; an arrow joins the two
+  where both were measured and the markers do not overlap. H2S readings logged as `"max"` are drawn at the
   analyser's 100 ppm upper range limit (dashed line). CO and NH3 are not shown.
   The CH4, CO2 and O2 values come from the raw-gas reading, or from the
   after-filter reading for the four units measured only there.

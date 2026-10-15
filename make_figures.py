@@ -285,17 +285,18 @@ def fig_composition(t: pd.DataFrame | None = None):
     """Figure 5: reference biogas composition per household digester (Dräger X-am 8000).
 
     Top: CH4 and CO2 in vol-%. Bottom: H2S in ppm before and after the
-    household's H2S filter, side by side at each unit; the dashed line is the
-    analyser's upper range limit, and readings there were at or above it. One
-    legend in a single row below the unit axis. ``t`` is ``composition_table()``
-    (read when None).
+    household's H2S filter, on one vertical per unit, with an arrow from the
+    raw-gas to the after-filter reading where both were measured (left out
+    where the two markers overlap); the dashed line is the analyser's upper
+    range limit, and readings there were at or above it. One legend in a
+    single row below the unit axis. ``t`` is ``composition_table()`` (read
+    when None). Returns the (closed) figure.
     """
     from matplotlib.lines import Line2D
     t = composition_table() if t is None else t
     x = np.arange(len(t))
     series = {"CH4": r"CH$_4$", "CO2": r"CO$_2$",
               "H2S_raw": r"H$_2$S, raw gas", "H2S_filtered": r"H$_2$S, after filter"}
-    dodge = {"CH4": 0.0, "CO2": 0.0, "H2S_raw": -0.14, "H2S_filtered": 0.14}
     fig, (ax_v, ax_p) = plt.subplots(2, 1, figsize=(6.6, 6.2), sharex=True,
                                      gridspec_kw={"hspace": 0.06})
     ax_p.axhline(H2S_RANGE_PPM, color="0.45", lw=0.7, ls="--", zorder=1)
@@ -303,10 +304,18 @@ def fig_composition(t: pd.DataFrame | None = None):
               fontsize=9, ha="center", va="top")
     for col, label in series.items():
         ax = ax_v if col in ("CH4", "CO2") else ax_p
-        ax.plot(x + dodge[col], t[col], "o", ms=5.5, mfc=COMPOSITION_COLOURS[col],
-                mec="black", mew=0.6, ls="none", zorder=3, clip_on=False)
+        ax.plot(x, t[col], "o", ms=5.5, mfc=COMPOSITION_COLOURS[col], mec="black",
+                mew=0.6, ls="none", zorder=3, clip_on=False, gid=col)
     ax_v.set_ylim(30, 62)
     ax_p.set_ylim(-5, 110)
+    # effect of the H2S filter: raw-gas reading -> after-filter reading
+    pts_per_ppm = ax_p.get_window_extent().height / np.diff(ax_p.get_ylim())[0] * 72 / fig.dpi
+    for xi, raw, filt in zip(x, t["H2S_raw"], t["H2S_filtered"]):
+        if np.isnan(raw) or np.isnan(filt) or abs(raw - filt) * pts_per_ppm < 8:
+            continue
+        ax_p.annotate("", xy=(float(xi), float(filt)), xytext=(float(xi), float(raw)), zorder=2,
+                      arrowprops=dict(arrowstyle="-|>", color="0.2", lw=0.8, mutation_scale=8,
+                                      shrinkA=3.8, shrinkB=3.8))
     ax_v.set_ylabel(r"volumetric concentration / vol-\%")
     ax_p.set_ylabel(r"volumetric concentration / ppm")
     ax_p.set_xlabel(r"monitoring unit")
@@ -329,6 +338,7 @@ def fig_composition(t: pd.DataFrame | None = None):
     fig.savefig(OUT / "Figure_5.png")
     fig.savefig(OUT / "Figure_5.pdf")
     plt.close(fig)
+    return fig
 
 
 def daily_profiles(sen="SN_01015", min_day_records=20) -> pd.DataFrame:

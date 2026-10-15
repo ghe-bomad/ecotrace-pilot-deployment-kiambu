@@ -68,3 +68,18 @@ def test_fig_composition_writes_figure_5(tmp_path, monkeypatch):
     fig_composition(composition_table(RAW))
     assert (tmp_path / "Figure_5.png").stat().st_size > 0
     assert (tmp_path / "Figure_5.pdf").stat().st_size > 0
+
+
+def test_h2s_before_and_after_sit_on_one_vertical_joined_by_an_arrow(tmp_path, monkeypatch):
+    monkeypatch.setattr(make_figures, "OUT", tmp_path)
+    set_mpl()
+    t = composition_table(RAW)
+    fig = fig_composition(t)
+    ax = fig.axes[1]
+    lines = {ln.get_gid(): ln for ln in ax.lines if ln.get_gid()}
+    assert list(lines["H2S_raw"].get_xdata()) == list(lines["H2S_filtered"].get_xdata())
+    # only 01001 (x = 0) was measured before and after the filter: one arrow, top to bottom
+    from matplotlib.text import Annotation
+    arrows = [a for a in ax.texts if isinstance(a, Annotation)]
+    assert len(arrows) == 1
+    assert arrows[0].xyann == (0, 66.5) and arrows[0].xy == (0, 43.8)
