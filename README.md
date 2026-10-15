@@ -22,58 +22,52 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 | path | what |
 |---|---|
-| `make_figures.py` | generator for `Figure_1` (data validity), `Figure_2` (use rhythm), `Figure_3` (daily gas use per household: volume on top, cooking duration below) and the supplementary `fig_coverage` |
-| `validity.py` | the four-check data-validity classification behind Figure 1 and its quoted counts |
+| `make_figures.py` | generator for `Figure_2` (data validity), `Figure_3` (use rhythm) and `Figure_4` (daily gas use per household: volume on top, cooking duration below); `Figure_1`, the site map, is produced manually |
+| `validity.py` | the four-check data-validity classification behind Figure 2 and its quoted counts |
 | `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
-| `test_volumes.py` | tests for the daily-volume and unmeasured-gas calculations behind Figure 4 (`python3 -m pytest`) |
+| `test_volumes.py` | tests for the daily-volume calculation behind Figure 4 and the shared unit order (`python3 -m pytest`) |
 | `make_graphical_abstract.py` | generator for the journal's graphical abstract |
 | `scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
-| `figures/` | the rendered figures, including the manually produced site maps |
+| `figures/` | the paper's figures, including the manually produced site map (Figure 1) |
 | `scripts/get_data.sh` | clones and derives the companion dataset |
 | `badges/` | the README badges, committed as SVG rather than fetched at render time |
 
 ## The figures
 
-- **`Figure_1`** (`fig_validity`): the validity class of every household unit-day.
+- **`Figure_1.png`**: map of the 20 installation sites in Kiambu County. Site
+  positions are jittered to protect household privacy. Produced manually, not
+  by code in this repository: household GPS is not part of the published
+  dataset, so the map cannot be regenerated from public data.
+- **`Figure_2`** (`fig_validity`): the validity class of every household unit-day.
   `validity.py` applies four checks in order: link (connectivity heartbeats
   received), data (one-minute sensor records received), sensor health (no more
-  than 20 flow-sensor reset messages a day) and use (at least 20 minutes in the
-  sustained measuring-state run with corrected flow at or above the 2 L/min
-  deadband; see the `validity.py` docstring for every threshold and the order of
-  the checks). The thresholds were set from this fleet and are heuristics; "valid" means the sensor
-  was alive and measuring, not that its readings are accurate.
-- **`fig_coverage`** (supplementary; Figure 1 in earlier versions): daily telemetry-completeness heatmap, one row
-  per device serial, de-identified. Reads raw Parquet from the data repository
-  and re-derives what it needs. All 20 household units are plotted; the three
-  that fail the inclusion criterion (SN_01012, SN_01018, SN_01023; a unit is
-  usable only if it was still returning sensor records in the final week of
-  the pilot) are drawn
-  identically and simply sort to the bottom, but are excluded from the quoted
-  statistics. Note this set is not the same as the technical paper's
-  `EXCLUDE_SENSORS`: that analysis drops SN_01005 and SN_01010 (ILRI research
-  reactors, out of scope here too) plus SN_01012 and SN_01018, but keeps
-  SN_01023, which has enough data for the analyses it appears in while being too
-  sparse for a coverage statistic. Days before a unit's installation are masked
-  and painted warm grey, distinct from the completeness ramp, so "no data" cannot
-  read as "low completeness".
-- **`Figure_3`** (`fig_use`): daily gas use per usable household on valid days.
-  The top panel is the daily gas volume; the bottom panel is the cooking duration
-  (see `validity.py`). The volume comes from the dataset's `flow_zero_cal` column
-  (the flow with each unit's zero-flow offset removed; see the dataset's
-  `docs/field_correction.md` §7) and uses the dataset's volume definition: one-minute measuring rows at or above
-  0.5 L/min (the dataset's no-flow gate) plus `gap_fill_L`, the unmeasured gas
-  the dataset fills in next to rows in use, summed per UTC day, the same day key
-  `validity.py` uses. The interiors of gaps longer than one sleep cycle are not
-  filled. `make_stats.py` reports the filled share.
-- **`fig_diurnal`** (Figure 2): one household's normalised daily use rhythm.
+  than 20 flow-sensor reset messages a day) and use (at least 3 min a day in
+  measuring runs of three or more consecutive minutes with corrected flow at or
+  above the 2 L/min deadband; see the `validity.py` docstring for every
+  threshold and the order of the checks). The thresholds were set from this
+  fleet and are heuristics; "valid" means the sensor was alive and measuring,
+  not that its readings are accurate. Units are in ascending number, as in
+  Figure 4. The three units that fail the inclusion criterion (SN_01012,
+  SN_01018, SN_01023; a unit is usable only if it was still returning sensor
+  records in the final week of the pilot) are marked with an asterisk and
+  excluded from the quoted statistics. This set is not the same as the
+  technical paper's `EXCLUDE_SENSORS`, which drops SN_01005 and SN_01010 (ILRI
+  research reactors, out of scope here too) plus SN_01012 and SN_01018, but
+  keeps SN_01023.
+- **`Figure_3`** (`fig_diurnal`): one household's normalised daily use rhythm.
   Each day is normalised to 100%, so the figure is shape-only and carries no
   absolute volumes. Reads the data repository's derived CSVs, which contain
   only state-0 (normal measuring) rows with the swap-corrected flow.
-- **`installation_sites_22.png`**: map of the 22 installation sites in Kiambu
-  County. Produced manually, not by code in this repository: household GPS is
-  not part of the published dataset, so the map cannot be regenerated from
-  public data. `installation_sites_20.png` is the 20-site version of the same
-  manually produced map.
+- **`Figure_4`** (`fig_use`): daily gas use per usable household on valid days.
+  The top panel is the daily gas volume; the bottom panel is the cooking
+  duration (see `validity.py`). The volume comes from the dataset's
+  `flow_zero_cal` column (the flow with each unit's zero-flow offset removed;
+  see the dataset's `docs/field_correction.md` §7) and uses the dataset's volume
+  definition: one-minute measuring rows at or above 0.5 L/min (the dataset's
+  no-flow gate) plus `gap_fill_L`, the unmeasured gas the dataset fills in next
+  to rows in use, summed per UTC day, the same day key `validity.py` uses. The
+  interiors of gaps longer than one sleep cycle are not filled. `make_stats.py`
+  reports the filled share.
 
 ## Getting the data
 
@@ -91,14 +85,14 @@ builds its derived data. `make_figures.py` locates that repository via the
 
 ```bash
 pip install -r requirements.txt
-python3 make_figures.py     # -> figures/Figure_1 to Figure_3 and fig_coverage (.png, .pdf)
-python3 -m pytest           # tests for the Figure 4 calculations
+python3 make_figures.py     # -> figures/Figure_2 to Figure_4 (.png, .pdf); Figure_1 is the manual map
+python3 -m pytest           # tests for the Figure 4 volume and the unit order
 python3 make_stats.py       # prints the paper's quoted statistics, labelled by where they appear
 python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
 ```
 
 `make_graphical_abstract.py` draws its cooking-rhythm curve with the same
-`daily_profiles` helper as Figure 2, so the two cannot drift apart. It needs
+`daily_profiles` helper as Figure 3, so the two cannot drift apart. It needs
 LaTeX, like `make_figures.py`.
 
 `make_stats.py` imports the loaders and constants from `make_figures.py`, so the

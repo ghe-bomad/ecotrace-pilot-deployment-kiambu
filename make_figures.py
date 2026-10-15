@@ -12,10 +12,10 @@ from matplotlib.ticker import MultipleLocator
 import os
 
 # The data repository (ecotrace-pilot-data-kiambu): ECOTRACE_DATA if set, else a
-# sibling checkout next to this repo. fig_coverage reads the raw Parquet (it
-# measures telemetry completeness, which the derived CSVs deliberately collapse);
-# fig_diurnal reads the derived CSVs, so it uses the canonical corrected flow
-# rather than re-deriving it here.
+# sibling checkout next to this repo. fig_validity reads the raw Parquet (link and
+# record checks need every row); fig_diurnal and fig_use read the derived CSVs, so
+# they use the canonical corrected flow rather than re-deriving it here. Figure 1,
+# the map of installation sites, is produced manually (see figures/README.md).
 _env = os.environ.get("ECOTRACE_DATA")
 if _env:
     DATA_REPO = Path(_env).expanduser().resolve()
@@ -47,24 +47,16 @@ NOT_HOUSEHOLD = {"SN_01005", "SN_01010"}   # ILRI research reactors, excluded on
 # documented field failures; excluded from all statistics.
 FAILED = {"SN_01012", "SN_01018", "SN_01023"}
 PILOT_END = pd.Timestamp("2026-07-19 23:59:59", tz="UTC")   # fixed publication cutoff
-# Single-series figures (2 and 3) are grayscale; Figure 1 keeps its categorical
+# Single-series figures (3 and 4) are grayscale; Figure 2 keeps its categorical
 # validity palette.
 INK = "0.15"         # medians, lines
 EDGE = "0.35"        # box edges, whiskers, caps
 FILL = "0.86"        # box fill
-BAND = "0.15"        # Figure 2 interquartile band (drawn with alpha)
+BAND = "0.15"        # Figure 3 interquartile band (drawn with alpha)
 FLIER = "0.55"       # outlier circles
 
-# Perceptually uniform, colour-blind safe, reversed so low completeness is light
-# and high is dark. A deployed-but-silent day is 0.0 and renders at the light end;
-# only pre-installation is masked, and it is painted NA_GREY (a warm grey outside
-# the ramp) so "no data" can never be misread as "low completeness".
-UPTIME_CMAP = "cividis_r"
-NA_GREY = "#e0ddd6"
-
-
 def unit_order(units) -> list[str]:
-    """Units by ascending number, the order used in Figures 1 and 3."""
+    """Units by ascending number, the order used in Figures 2 and 4."""
     return sorted(str(u).replace("SN_", "") for u in units)
 
 
@@ -102,77 +94,10 @@ def load_sensor_times(sen: str) -> pd.DatetimeIndex:
     ts = pd.to_datetime(pd.concat(frames, ignore_index=True)["timestamp"], utc=True).dropna()
     return pd.DatetimeIndex(ts[ts <= PILOT_END].sort_values())
 
-def fig_coverage():
-    """Daily telemetry completeness per household unit, over a fixed pilot window.
-
-    Cell = distinct one-minute bins containing a sensor record, / 1440.
-    This measures the link: powered, looping, and delivering. It deliberately does
-    NOT claim to measure sensor health -- no reachable device state encodes a fault
-    (safety checks are compiled out), so the telemetry carries no health signal.
-    Days after a unit's installation with no records are 0.0, not missing.
-    """
-    households = sorted({Path(d).name for d in glob.glob(str(RAW / "SN_*"))} - NOT_HOUSEHOLD)
-    recs, first, uptime = {}, {}, {}
-    for sen in households:
-        ts = load_sensor_times(sen)
-        first[sen] = ts[0]
-        by_day = (ts.floor("min").to_series().groupby(ts.date).nunique() / 1440.0).clip(upper=1.0)
-        recs[sen] = by_day
-        span = (PILOT_END.normalize() - ts[0].normalize()).days + 1
-        uptime[sen] = by_day.sum() / span
-
-    # All units are plotted and rendered identically; the excluded ones simply sort
-    # to the bottom on their own merit. Which units are excluded is stated in the
-    # caption, not encoded in the graphics.
-    order = sorted(households, key=lambda s: uptime[s], reverse=True)
-    keep = [s for s in order if s not in FAILED]
-    drop = [s for s in order if s in FAILED]
-
-    start = min(first.values()).normalize().date()
-    days = pd.date_range(start, PILOT_END.normalize().date(), freq="D").date
-    day_ix = {d: i for i, d in enumerate(days)}
-    M = np.full((len(order), len(days)), np.nan)
-    for r, sen in enumerate(order):
-        M[r, day_ix[first[sen].date()]:] = 0.0     # deployed but silent = 0, not missing
-        for d, v in recs[sen].items():
-            if d in day_ix:
-                M[r, day_ix[d]] = v
-
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-    fig, ax = plt.subplots(figsize=(6.6, 4.4))
-    cmap = plt.get_cmap(UPTIME_CMAP).copy()
-    cmap.set_bad(NA_GREY)                            # pre-installation only
-    x0 = mdates.date2num(start)
-    im = ax.imshow(M, aspect="auto", cmap=cmap, vmin=0, vmax=1,
-                   extent=[x0, x0 + len(days), len(order) - 0.5, -0.5],
-                   interpolation="nearest")
-    ax.xaxis_date()
-    ax.xaxis.set_major_locator(mdates.MonthLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
-    ax.set_yticks(range(len(order)))
-    ax.set_yticklabels([s.replace("SN_", "") for s in order], fontsize=7)
-    ax.tick_params(axis="y", length=0)
-    ax.minorticks_off()
-    ax.set_ylabel(r"monitoring unit")
-    ax.set_xlabel(r"2026")
-    cax = make_axes_locatable(ax).append_axes("right", size="3%", pad=0.15)
-    fig.colorbar(im, cax=cax, label=r"daily telemetry completeness")
-    fig.tight_layout()
-    fig.savefig(OUT / "fig_coverage.png")
-    fig.savefig(OUT / "fig_coverage.pdf")
-    plt.close(fig)
-    inc = np.array([uptime[s] for s in keep])
-    print(f"included {len(keep)}/{len(households)} | median uptime {np.median(inc):.3f}"
-          f" | IQR {np.percentile(inc,25):.3f}-{np.percentile(inc,75):.3f}"
-          f" | range {inc.min():.3f}-{inc.max():.3f}")
-    for s in drop:
-        print(f"  EXCLUDED {s}: uptime {uptime[s]:.3f}, last record {recs[s].index.max()}")
-
-
 def fig_validity():
-    """Figure 1: validity class of every household unit-day (four checks, see validity.py).
+    """Figure 2: validity class of every household unit-day (four checks, see validity.py).
 
-    Rows are ordered by unit number, as in Figure 3; the three units excluded from
+    Rows are ordered by unit number, as in Figure 4; the three units excluded from
     the statistics are marked with an asterisk and grey labels. Colours: teal = valid (dark: gas used, light: no use); warm neutrals =
     delivery problems; amber = silent (link up, no data); violet = sensor fault signs.
     The coloured classes were checked for lightness, chroma, colour-vision-deficiency
@@ -216,8 +141,8 @@ def fig_validity():
               frameon=False, handlelength=1.2, columnspacing=1.0)
     fig.set_layout_engine("none")
     fig.subplots_adjust(left=0.1, right=0.98, top=0.98, bottom=0.27)
-    fig.savefig(OUT / "Figure_1.png", bbox_inches=None)
-    fig.savefig(OUT / "Figure_1.pdf", bbox_inches=None)
+    fig.savefig(OUT / "Figure_2.png", bbox_inches=None)
+    fig.savefig(OUT / "Figure_2.pdf", bbox_inches=None)
     plt.close(fig)
 
 
@@ -281,13 +206,13 @@ def _boxes(ax, data, labels):
 
 
 def fig_use():
-    """Figure 3: daily gas use per usable household on valid days.
+    """Figure 4: daily gas use per usable household on valid days.
 
     Top: volume, the dataset's gap-filled, zero-calibrated volume
     (``daily_volumes``). Bottom: cooking duration, the minutes per day in
     sustained measuring-state runs with corrected flow at or above the 2 L/min
     deadband (validity.py), as hours; the flow is an on/off test here. The two
-    panels share the unit axis; units in ascending number, as in Figure 1.
+    panels share the unit axis; units in ascending number, as in Figure 2.
     """
     from validity import classify
     df = classify()
@@ -304,8 +229,8 @@ def fig_use():
     ax_d.set_ylabel(r"cooking duration / h day$^{-1}$")
     ax_d.set_xlabel(r"monitoring unit")
     fig.align_ylabels((ax_v, ax_d))
-    fig.savefig(OUT / "Figure_3.png")
-    fig.savefig(OUT / "Figure_3.pdf")
+    fig.savefig(OUT / "Figure_4.png")
+    fig.savefig(OUT / "Figure_4.pdf")
     plt.close(fig)
 
 
@@ -363,8 +288,8 @@ def fig_diurnal(sen="SN_01015", min_day_records=20):
     ax.set_ylabel(r"share of daily use / \%")
     ax.legend(loc="upper right", fontsize=8.5)
     fig.tight_layout()
-    fig.savefig(OUT / "Figure_2.png")
-    fig.savefig(OUT / "Figure_2.pdf")
+    fig.savefig(OUT / "Figure_3.png")
+    fig.savefig(OUT / "Figure_3.pdf")
     plt.close(fig)
     print("\nndays:", ndays, "| peak hours:",
           [int(h) for h in np.argsort(mean)[-3:]])
@@ -373,6 +298,5 @@ def fig_diurnal(sen="SN_01015", min_day_records=20):
 if __name__ == "__main__":
     set_mpl()
     fig_validity()
-    fig_coverage()
     fig_diurnal()
     fig_use()

@@ -25,7 +25,7 @@ are heuristics to be tested on other deployments. "Valid" means
 the sensor was alive and measuring, not that its readings are accurate.
 
 Used by make_stats.py (the counts quoted in the paper) and make_figures.py
-(Figure 1).
+(Figure 2).
 """
 from __future__ import annotations
 import glob

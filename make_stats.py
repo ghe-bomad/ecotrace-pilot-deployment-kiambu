@@ -59,7 +59,7 @@ def main():
     print(f"[Methods] units usable (measuring in final week from {FINAL_WEEK_START.date()}): "
           f"{len(kept)}/{len(units)}; excluded {sorted(s[3:] for s in excluded)}")
 
-    # -- completeness (same definition as Figure 1)
+    # -- completeness (same record definition as Figure 2)
     comp, active, med_active = {}, {}, {}
     for s in kept:
         by_day = daily_completeness(ts[s])
@@ -109,7 +109,7 @@ def main():
     # packets are sent every 10 minutes, so a reporting slot is a 10-min bin
     slots = hb["timestamp"].dt.floor("10min").nunique() / ((PILOT_END - first) / pd.Timedelta("10min"))
     valid = ts[s].floor("min").nunique() / (span_days * 1440)
-    print(f"[Feasibility, Discussion, Fig. 1] 01018 last sensor record {ts[s].max().date()}; "
+    print(f"[Feasibility, Discussion, Fig. 2] 01018 last sensor record {ts[s].max().date()}; "
           f"10-min reporting slots with a packet {slots:.1%}; valid one-minute records {valid:.1%} of expected")
 
     # -- the two units that stopped: battery voltage at their last heartbeat
@@ -136,10 +136,10 @@ def main():
           f"RMSE {np.sqrt((resid ** 2).mean()):.1f} vol-%, r {np.corrcoef(pred, gt_ch4)[0, 1]:.2f}; "
           f"reference range {gt_ch4.min():.0f}-{gt_ch4.max():.0f} vol-%")
 
-    # -- data validity (Figure 1): four checks per unit-day, see validity.py
+    # -- data validity (Figure 2): four checks per unit-day, see validity.py
     v = classify()
     counts = v["cls"].value_counts().reindex(CLASSES, fill_value=0)
-    print("[Feasibility, Fig. 1] unit-days by validity class (20 units): "
+    print("[Feasibility, Fig. 2] unit-days by validity class (20 units): "
           + ", ".join(f"{c} {n}" for c, n in counts.items()))
     on = v[v["dashboard_online"]]
     bad = on["cls"].isin(["silent: link up, no data", "sensor fault signs"])
@@ -169,15 +169,15 @@ def main():
 
     nu = usable[usable["cls"] == "valid: no use"]
     print(f"[Feasibility] usable units: no-use days {len(nu)}, top units {nu.unit.value_counts().head(3).to_dict()}")
-    # -- gas use (Figure 3): sustained, flowing minutes per valid day, per usable unit
+    # -- cooking duration (Figure 4 bottom): sustained, flowing minutes per valid day, per usable unit
     vd = usable[usable["cls"].str.startswith("valid")]
     med_h = vd.groupby("unit")["use_min"].median() / 60
-    print(f"[Feasibility, Fig. 3 bottom] median daily cooking duration per unit {med_h.min():.1f}-{med_h.max():.1f} h "
+    print(f"[Feasibility, Fig. 4 bottom] median daily cooking duration per unit {med_h.min():.1f}-{med_h.max():.1f} h "
           f"(median across units {med_h.median():.1f} h)")
-    # -- gas volume (Figure 4): litres per valid day from the zero-calibrated flow
+    # -- gas volume (Figure 4 top): litres per valid day from the zero-calibrated flow
     vol = daily_volumes()
     med_v = vol.groupby("unit")["volume_L"].median() / 1000
-    print(f"[Feasibility, Fig. 3 top] median daily gas volume per unit {med_v.min():.2f}-{med_v.max():.2f} m3 "
+    print(f"[Feasibility, Fig. 4 top] median daily gas volume per unit {med_v.min():.2f}-{med_v.max():.2f} m3 "
           f"(median across units {med_v.median():.2f} m3, {len(vol)} valid unit-days)")
     measured = filled = 0.0
     for u in kept:
@@ -185,7 +185,7 @@ def main():
         c = c[c["timestamp"] <= PILOT_END]
         measured += c.loc[c["flow_zero_cal"] >= NO_FLOW_MAX, "flow_zero_cal"].sum()
         filled += c["gap_fill_L"].sum()
-    print(f"[Feasibility, Fig. 3 top] gas filled into unmeasured time next to use (dataset gap_fill_L): "
+    print(f"[Feasibility, Fig. 4 top] gas filled into unmeasured time next to use (dataset gap_fill_L): "
           f"{filled / (measured + filled):.1%} of the total")
     sus_min, flow_min, exp_min = 0, 0, 0
     for u in kept:
@@ -227,7 +227,7 @@ def main():
         prev = day
     if start is not None:
         runs.append((start, prev))
-    print("[Feasibility, Fig. 1] fleet-wide gaps (< half the units reporting): "
+    print("[Feasibility, Fig. 2] fleet-wide gaps (< half the units reporting): "
           + "; ".join(f"{a} to {b} (min {reporting.loc[a:b].min()} units)" for a, b in runs
                       if (pd.Timestamp(b) - pd.Timestamp(a)).days >= 2))
 

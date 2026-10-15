@@ -2,7 +2,7 @@
 
 Journal spec: 1328 x 531 px (w x h) or proportionally more, readable at 13 x 5 cm.
 The canvas is 6.5 x 2.6 in (2.5:1), saved as vector SVG and PDF. Typography comes from
-scientific.mplstyle; the cooking-rhythm curve is the mean of Figure 2's daily
+scientific.mplstyle; the cooking-rhythm curve is the mean of Figure 3's daily
 profiles, via the same helper, so the two cannot drift apart.
 
     python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
@@ -88,10 +88,10 @@ def panel_pilot(ax):
 
 
 def panel_worked(fig, ax):
-    """Two headline numbers and the measured cooking rhythm (mean of Figure 2's daily profiles).
+    """Two headline numbers and the measured cooking rhythm (mean of Figure 3's daily profiles).
 
     The volume is the median of the per-household median daily volumes behind
-    Figure 3 (make_stats.py, "[Feasibility, Fig. 3 top]").
+    Figure 4 (make_stats.py, "[Feasibility, Fig. 4 top]").
     """
     x0 = COLS[1][0]
     for y, big, small, dx in [(1.90, r"17/20", r"units usable,\\83\,\% completeness", 0.90),
