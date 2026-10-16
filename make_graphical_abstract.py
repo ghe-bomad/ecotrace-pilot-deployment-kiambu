@@ -95,7 +95,7 @@ def panel_worked(fig, ax):
     """
     x0 = COLS[1][0]
     for y, big, small, dx in [(1.90, r"17/20", r"units usable,\\83\,\% completeness", 0.90),
-                              (1.37, r"1.35\,m$^3$", r"median daily\\gas volume", 1.12)]:
+                              (1.37, r"1.35\,m$^3$", r"median daily\\gas volume\\(lower bound)", 1.12)]:
         ax.text(x0, y, rf"\textbf{{{big}}}", fontsize=19, va="center")
         ax.text(x0 + dx, y, rf"\begin{{tabular}}{{@{{}}l}}{small}\end{{tabular}}", fontsize=9,
                 va="center", color=INK2)
