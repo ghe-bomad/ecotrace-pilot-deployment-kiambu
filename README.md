@@ -35,7 +35,8 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 ## The figures
 
-- **`Figure_1.png`**: map of the 20 installation sites in Kiambu County. Site
+- **`Figure_1`** (`.png`, `.pdf`): map of the 20 installation sites, cropped to
+  Kiambu County, with latitude and longitude, on OpenStreetMap boundaries. Site
   positions are from the authors' GPS records, jittered to protect household
   privacy. Drawn with Claude Design (Anthropic), not by code in this
   repository: household GPS is not part of the published dataset, so the map
@@ -69,7 +70,8 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   no-flow gate) plus `gap_fill_L`, the unmeasured gas the dataset fills in next
   to rows in use, summed per UTC day, the same day key `validity.py` uses. The
   interiors of gaps longer than one sleep cycle are not filled. `make_stats.py`
-  reports the filled share.
+  reports the filled share. Flows and volumes are in standard litres at 20 °C and
+  101.325 kPa, as in the dataset.
 - **`Figure_5`** (`fig_composition`): the reference gas composition of each
   household digester, from the dataset's `biogas_composition.json` (Dräger
   X-am 8000 spot readings, treated as ground truth). Top: CH4 and CO2 in vol-%.
