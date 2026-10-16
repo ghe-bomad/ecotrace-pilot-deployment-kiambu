@@ -15,8 +15,8 @@ abstract: >-
   duplicate it.
 type: software
 license: Apache-2.0
-version: 1.3.0
-date-released: "2026-10-15"
+version: 1.3.1
+date-released: "2026-10-16"
 doi: 10.5281/zenodo.22233280   # concept DOI: always resolves to the newest version.
 # Cite the version DOI of the release you actually used; see the Zenodo record.
 repository-code: "https://github.com/ghe-bomad/ecotrace-pilot-deployment-kiambu"
@@ -99,5 +99,5 @@ references:
         orcid: "https://orcid.org/0000-0002-2095-9724"
         affiliation: "ETH Zurich, Global Health Engineering, Zurich, Switzerland"
     doi: 10.5281/zenodo.22232789
-    version: "1.1.0"
+    version: "1.1.1"
     notes: "Companion dataset (ecotrace-pilot-data-kiambu). This analysis reads its derived data."
