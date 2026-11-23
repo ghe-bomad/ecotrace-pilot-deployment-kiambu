@@ -20,18 +20,33 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
 
 ## Contents
 
+```
+scripts/    everything that runs: data download, figures, statistics, figure style
+tests/      pytest tests for the calculations behind the figures and statistics
+figures/    the paper's figures, as committed outputs
+badges/     the README badges
+```
+
+All commands below are run from the repository root.
+
 | path | what |
 |---|---|
-| `make_figures.py` | generator for `Figure_2` (data validity), `Figure_3` (use rhythm), `Figure_4` (daily gas use per household: volume on top, cooking duration below) and `Figure_5` (reference gas composition per digester); `Figure_1`, the site map, was drawn with Claude Design |
-| `validity.py` | the four-check data-validity classification behind Figure 2 and its quoted counts |
-| `make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
-| `test_volumes.py` | tests for the daily-volume calculation behind Figure 4 and the shared unit order (`python3 -m pytest`) |
-| `test_composition.py` | tests for the gas-composition table behind Figure 5 |
-| `make_graphical_abstract.py` | generator for the journal's graphical abstract |
-| `scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
-| `figures/` | the paper's figures, including the site map drawn with Claude Design (Figure 1) |
 | `scripts/get_data.sh` | clones and derives the companion dataset |
+| `scripts/make_figures.py` | generator for `Figure_2` (data validity), `Figure_3` (use rhythm), `Figure_4` (daily gas use per household: volume on top, cooking duration below) and `Figure_5` (reference gas composition per digester); `Figure_1`, the site map, was drawn with Claude Design |
+| `scripts/validity.py` | the four-check data-validity classification behind Figure 2 and its quoted counts |
+| `scripts/make_stats.py` | reproduces every number the paper quotes that is not read off a figure |
+| `scripts/pressure_volume.py` | the pressure-based gas volume (stored gas taken as proportional to the gauge pressure) and its comparison with the thermal volume; prints the numbers the paper quotes for it |
+| `scripts/make_graphical_abstract.py` | generator for the journal's graphical abstract |
+| `scripts/scientific.mplstyle` | figure style (LaTeX serif, Okabe-Ito, 600 dpi) |
+| `tests/test_volumes.py` | tests for the daily-volume calculation behind Figure 4 and the shared unit order |
+| `tests/test_composition.py` | tests for the gas-composition table behind Figure 5 |
+| `tests/test_pressure_volume.py` | tests for the cooking events, the event volume and the unit ratios of `pressure_volume.py` |
+| `pytest.ini` | points pytest at `tests/` and puts `scripts/` on the import path |
+| `figures/` | the paper's figures, including the site map drawn with Claude Design (Figure 1); see `figures/README.md` |
 | `badges/` | the README badges, committed as SVG rather than fetched at render time |
+| `DATA_VERSION` | the revision of the companion dataset that the figures and statistics were produced from |
+| `requirements.txt` | pinned Python dependencies |
+| `CITATION.cff` | citation metadata for this repository and the companion dataset |
 
 ## The figures
 
@@ -69,7 +84,10 @@ household's normalised, shape-only use rhythm, not the cohort analysis.
   definition: one-minute measuring rows at or above 0.5 L/min (the dataset's
   no-flow gate) plus `gap_fill_L`, the unmeasured gas the dataset fills in next
   to rows in use, summed per UTC day, the same day key `validity.py` uses. The
-  interiors of gaps longer than one sleep cycle are not filled. `make_stats.py`
+  interiors of gaps longer than one sleep cycle are not filled. Units 01001 and
+  01003 are drawn in red with hatching (`PARTIAL_COVERAGE`): their line did not
+  carry all biogas use of the household, so their values do not describe it. The
+  figure has no legend for this; the caption explains the red units. `make_stats.py`
   reports the filled share. Flows and volumes are in standard litres at 20 °C and
   101.325 kPa, as in the dataset.
 - **`Figure_5`** (`fig_composition`): the reference gas composition of each
@@ -98,11 +116,15 @@ builds its derived data. `make_figures.py` locates that repository via the
 
 ```bash
 pip install -r requirements.txt
-python3 make_figures.py     # -> figures/Figure_2 to Figure_5 (.png, .pdf); Figure_1 is drawn outside this repo
-python3 -m pytest           # tests for the Figure 4 volume, the unit order and the Figure 5 table
-python3 make_stats.py       # prints the paper's quoted statistics, labelled by where they appear
-python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
+python3 scripts/make_figures.py     # -> figures/Figure_2 to Figure_5 (.png, .pdf); Figure_1 is drawn outside this repo
+python3 -m pytest                   # tests for the Figure 4 volume, the unit order, the Figure 5 table and the pressure-based volume
+python3 scripts/make_stats.py       # prints the paper's quoted statistics, labelled by where they appear
+python3 scripts/pressure_volume.py  # prints the comparison of the thermal with the pressure-based volumes
+python3 scripts/make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
 ```
+
+The scripts import each other by module name, so run them as shown, as files
+under `scripts/`; `pytest.ini` does the same for the tests.
 
 `make_graphical_abstract.py` draws its cooking-rhythm curve with the same
 `daily_profiles` helper as Figure 3, so the two cannot drift apart. It needs
@@ -112,6 +134,22 @@ LaTeX, like `make_figures.py`.
 unit sets, pilot window and completeness definition are shared, and it asserts
 that the hand-listed excluded units are exactly those the inclusion rule
 excludes. It needs no LaTeX.
+
+`pressure_volume.py` derives a second daily gas volume from the logged gas
+pressure and compares it with the thermal volume of Figure 4. In a fixed-dome
+digester the gauge pressure rises with the stored gas, so the pressure drop
+over a cooking event, times a storage constant, gives the gas withdrawn. The
+constant was not measured: the full gas store is taken as 23 % of the nominal
+plant volume at 1 m water column, the values of the modified CAMARTEC dome
+design (sources in the module docstring). Every ratio the script prints scales
+with these two numbers, so the comparison bounds the fleet-level volume only
+roughly; what it shows independently of them is how much the units differ from
+each other. Units whose pressure follows a
+closed valve (01003, 01008, 01014) and the unit with an impaired pressure sensor
+(01017) are left out. The technical paper's `plotting/pressure_balance.py` uses
+the same constants and gives identical daily volumes. The
+module docstring gives the event definition and the units left out. It needs
+no LaTeX.
 
 **A system LaTeX installation is also required.** `scientific.mplstyle` sets
 `text.usetex = True`, so matplotlib shells out to LaTeX for every label; this is

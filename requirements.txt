@@ -3,6 +3,7 @@ numpy==2.4.4
 pandas==3.0.2
 pyarrow==24.0.0
 matplotlib==3.9.0
+pytest==7.3.1        # tests only
 
 # NOTE: scientific.mplstyle sets text.usetex = True, so rendering also needs a
 # system LaTeX installation (TeX Live or MacTeX) with amsmath and dvipng on PATH.

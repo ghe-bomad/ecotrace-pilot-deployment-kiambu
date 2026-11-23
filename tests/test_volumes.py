@@ -55,3 +55,18 @@ def test_units_are_ordered_by_number_everywhere():
     from make_figures import unit_order
     assert unit_order(["01020", "01003", "01011", "01001"]) == ["01001", "01003", "01011", "01020"]
     assert unit_order({"SN_01009", "SN_01002"}) == ["01002", "01009"]
+
+
+def test_figure_4_marks_the_units_that_did_not_measure_all_gas_use(tmp_path, monkeypatch):
+    """01001 and 01003 are drawn in red with hatching in both panels; the caption, not the figure, says why."""
+    import make_figures as mf
+    monkeypatch.setattr(mf, "OUT", tmp_path)
+    mf.set_mpl()
+    fig = mf.fig_use()
+    assert (tmp_path / "Figure_4.png").exists()
+    for ax in fig.axes:
+        marked = [p for p in ax.patches if p.get_gid() == "partial_coverage"]
+        assert len(marked) == len(mf.PARTIAL_COVERAGE)
+    red = [t.get_text() for t in fig.axes[1].get_xticklabels() if t.get_color() == mf.FLAG]
+    assert red == ["01001", "01003"]
+    assert all(ax.get_legend() is None for ax in fig.axes)

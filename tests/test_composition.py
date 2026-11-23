@@ -83,3 +83,34 @@ def test_h2s_before_and_after_sit_on_one_vertical_joined_by_an_arrow(tmp_path, m
     arrows = [a for a in ax.texts if isinstance(a, Annotation)]
     assert len(arrows) == 1
     assert arrows[0].xyann == (0, 66.5) and arrows[0].xy == (0, 43.8)
+
+
+def test_top_panel_stacks_ch4_co2_and_the_balance_to_100(tmp_path, monkeypatch):
+    monkeypatch.setattr(make_figures, "OUT", tmp_path)
+    set_mpl()
+    t = composition_table(RAW)
+    fig = fig_composition(t)
+    ax = fig.axes[0]
+    bars = {c.patches[0].get_gid(): c.patches for c in ax.containers}
+    assert list(bars) == ["CH4", "CO2", "balance"]
+    for i, row in t.iterrows():
+        ch4, co2, rest = (bars[k][i] for k in ("CH4", "CO2", "balance"))
+        assert ch4.get_y() == 0 and ch4.get_height() == row["CH4"]
+        assert co2.get_y() == row["CH4"] and co2.get_height() == row["CO2"]
+        assert rest.get_y() == row["CH4"] + row["CO2"]
+        assert rest.get_y() + rest.get_height() == pytest.approx(100)
+
+
+def test_ch4_and_co2_segments_carry_their_reading(tmp_path, monkeypatch):
+    monkeypatch.setattr(make_figures, "OUT", tmp_path)
+    set_mpl()
+    t = composition_table(RAW)
+    fig = fig_composition(t)
+    labels = {}
+    for txt in fig.axes[0].texts:
+        labels.setdefault(txt.get_gid(), []).append(txt)
+    assert set(labels) == {"CH4_label", "CO2_label"}          # none on the balance
+    assert [x.get_text() for x in labels["CH4_label"]] == [f"{v:.1f}" for v in t["CH4"]]
+    assert [x.get_text() for x in labels["CO2_label"]] == [f"{v:.1f}" for v in t["CO2"]]
+    first = labels["CO2_label"][0]                              # centred in its segment, upright
+    assert first.get_position() == (0, 51 + 43.0 / 2) and first.get_rotation() == 90

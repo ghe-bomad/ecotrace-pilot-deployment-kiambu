@@ -16,6 +16,7 @@ import os
 # record checks need every row); fig_diurnal and fig_use read the derived CSVs, so
 # they use the canonical corrected flow rather than re-deriving it here. Figure 1,
 # the map of installation sites, was drawn with Claude Design (see figures/README.md).
+ROOT = Path(__file__).resolve().parents[1]      # repository root; this file is in scripts/
 _env = os.environ.get("ECOTRACE_DATA")
 if _env:
     DATA_REPO = Path(_env).expanduser().resolve()
@@ -26,7 +27,7 @@ if _env:
             "dataset, or fix/unset ECOTRACE_DATA."
         )
 else:
-    DATA_REPO = Path(__file__).resolve().parents[1] / "ecotrace-pilot-data-kiambu"
+    DATA_REPO = ROOT.parent / "ecotrace-pilot-data-kiambu"
     if not DATA_REPO.is_dir():
         raise FileNotFoundError(
             f"Cannot locate the ecotrace dataset repository at {DATA_REPO}. "
@@ -36,7 +37,7 @@ else:
 RAW = DATA_REPO / "data" / "raw_data"
 DERIVED = DATA_REPO / "data" / "derived_data"
 STYLE = Path(__file__).resolve().parent / "scientific.mplstyle"
-OUT = Path(__file__).resolve().parent / "figures"
+OUT = ROOT / "figures"
 OUT.mkdir(parents=True, exist_ok=True)
 
 TZ = "Africa/Nairobi"
@@ -54,12 +55,20 @@ EDGE = "0.35"        # box edges, whiskers, caps
 FILL = "0.86"        # box fill
 BAND = "0.15"        # Figure 3 interquartile band (drawn with alpha)
 FLIER = "0.55"       # outlier circles
+# Units whose line did not carry all biogas use of the household (installation
+# records): 01003 sat on the branch to a secondary kitchen, 01001 on the
+# main-house branch of a digester that also feeds a second kitchen. Their values
+# do not describe the household, so Figure 4 draws them in red with hatching.
+PARTIAL_COVERAGE = {"SN_01001", "SN_01003"}
+FLAG = "#C1272D"         # edges, medians and labels of those units
+FLAG_FILL = "#F6D5D2"    # their box fill
 
 # Dräger X-am 8000 upper H2S range limit: readings logged as "max" were at or above it.
 H2S_RANGE_PPM = 100
 # Figure 5: one colour per series (Okabe-Ito, checked for colour-vision deficiency),
-# all circles with a black outline.
-COMPOSITION_COLOURS = {"CH4": "#E69F00", "CO2": "#56B4E9",
+# bars and circles with a black outline. The balance to 100 vol-% was not measured
+# and is drawn in a neutral grey.
+COMPOSITION_COLOURS = {"CH4": "#E69F00", "CO2": "#56B4E9", "balance": "#E3E3E3",
                        "H2S_raw": "#D55E00", "H2S_filtered": "#009E73"}
 
 
@@ -235,14 +244,27 @@ def daily_volumes() -> pd.DataFrame:
     return pd.concat(out, ignore_index=True)
 
 
-def _boxes(ax, data, labels):
-    ax.boxplot(data, widths=0.55, showfliers=True, patch_artist=True,
-               boxprops=dict(facecolor=FILL, edgecolor=EDGE, linewidth=0.8),
-               medianprops=dict(color=INK, linewidth=1.5),
-               whiskerprops=dict(color=EDGE, linewidth=0.8), capprops=dict(color=EDGE, linewidth=0.8),
-               flierprops=dict(marker="o", markersize=2.2, markerfacecolor="none", markeredgecolor=FLIER,
-                               markeredgewidth=0.5))
-    ax.set_xticks(range(1, len(labels) + 1)); ax.set_xticklabels(labels, rotation=90, fontsize=7.5)
+def _boxes(ax, data, labels, flagged=()):
+    """Box plot per unit; units in ``flagged`` are drawn in red with hatching."""
+    bp = ax.boxplot(data, widths=0.55, showfliers=True, patch_artist=True,
+                    boxprops=dict(facecolor=FILL, edgecolor=EDGE, linewidth=0.8),
+                    medianprops=dict(color=INK, linewidth=1.5),
+                    whiskerprops=dict(color=EDGE, linewidth=0.8), capprops=dict(color=EDGE, linewidth=0.8),
+                    flierprops=dict(marker="o", markersize=2.2, markerfacecolor="none", markeredgecolor=FLIER,
+                                    markeredgewidth=0.5))
+    ax.set_xticks(range(1, len(labels) + 1))
+    ticklabels = ax.set_xticklabels(labels, rotation=90, fontsize=7.5)
+    for i, unit in enumerate(labels):
+        if unit not in flagged:
+            continue
+        bp["boxes"][i].set(facecolor=FLAG_FILL, edgecolor=FLAG, hatch="////", gid="partial_coverage")
+        bp["medians"][i].set_color(FLAG)
+        bp["fliers"][i].set_markeredgecolor(FLAG)
+        for part in ("whiskers", "caps"):
+            for line in bp[part][2 * i:2 * i + 2]:
+                line.set_color(FLAG)
+        if i < len(ticklabels):          # the upper panel of a shared axis has no tick labels
+            ticklabels[i].set_color(FLAG)
     # one x tick per unit, on the bottom and top edge of both panels; no minor
     # ticks on the categorical axis
     ax.tick_params(axis="x", which="major", length=3.5, width=0.6, bottom=True, top=True,
@@ -260,6 +282,9 @@ def fig_use():
     sustained measuring-state runs with corrected flow at or above the 2 L/min
     deadband (validity.py), as hours; the flow is an on/off test here. The two
     panels share the unit axis; units in ascending number, as in Figure 2.
+    Units in PARTIAL_COVERAGE are drawn in red with hatching: their line did
+    not carry all biogas use of the household. The figure carries no legend
+    for this; the caption explains it. Returns the (closed) figure.
     """
     from validity import classify
     df = classify()
@@ -270,8 +295,9 @@ def fig_use():
     duration = [df.loc[df["unit"] == u, "use_min"].to_numpy() / 60 for u in order]
     fig, (ax_v, ax_d) = plt.subplots(2, 1, figsize=(6.6, 5.4), sharex=True,
                                      gridspec_kw={"hspace": 0.06})
-    _boxes(ax_v, volume, order)
-    _boxes(ax_d, duration, order)
+    flagged = {u[3:] for u in PARTIAL_COVERAGE}
+    _boxes(ax_v, volume, order, flagged)
+    _boxes(ax_d, duration, order, flagged)
     ax_v.set_ylabel(r"gas volume / m$^3$ day$^{-1}$")
     ax_d.set_ylabel(r"cooking duration / h day$^{-1}$")
     ax_d.set_xlabel(r"monitoring unit")
@@ -279,34 +305,51 @@ def fig_use():
     fig.savefig(OUT / "Figure_4.png")
     fig.savefig(OUT / "Figure_4.pdf")
     plt.close(fig)
+    return fig
 
 
 def fig_composition(t: pd.DataFrame | None = None):
     """Figure 5: reference biogas composition per household digester (Dräger X-am 8000).
 
-    Top: CH4 and CO2 in vol-%. Bottom: H2S in ppm before and after the
-    household's H2S filter, on one vertical per unit, with an arrow from the
-    raw-gas to the after-filter reading where both were measured (left out
-    where the two markers overlap); the dashed line is the analyser's upper
+    Top: one stacked bar per unit, CH4 at the bottom, CO2 on top of it and the
+    balance to 100 vol-% (not measured) above; the CH4 and CO2 segments carry
+    their reading as upright text. Bottom: H2S in ppm before and
+    after the household's H2S filter, on one vertical per unit, with an arrow
+    from the raw-gas to the after-filter reading where both were measured (left
+    out where the two markers overlap); the dashed line is the analyser's upper
     range limit, and readings there were at or above it. One legend in a
     single row below the unit axis. ``t`` is ``composition_table()`` (read
     when None). Returns the (closed) figure.
     """
     from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
     t = composition_table() if t is None else t
     x = np.arange(len(t))
-    series = {"CH4": r"CH$_4$", "CO2": r"CO$_2$",
-              "H2S_raw": r"H$_2$S, raw gas", "H2S_filtered": r"H$_2$S, after filter"}
+    bars = {"CH4": r"CH$_4$", "CO2": r"CO$_2$", "balance": r"balance"}
+    points = {"H2S_raw": r"H$_2$S, raw gas", "H2S_filtered": r"H$_2$S, after filter"}
     fig, (ax_v, ax_p) = plt.subplots(2, 1, figsize=(6.6, 6.2), sharex=True,
                                      gridspec_kw={"hspace": 0.06})
+    # composition as parts of the whole: CH4, CO2 and what is left to 100 vol-%
+    heights = {"CH4": t["CH4"].to_numpy(float), "CO2": t["CO2"].to_numpy(float)}
+    heights["balance"] = np.clip(100.0 - heights["CH4"] - heights["CO2"], 0.0, None)
+    bottom = np.zeros(len(t))
+    for col in bars:
+        ax_v.bar(x, heights[col], bottom=bottom, width=0.72, color=COMPOSITION_COLOURS[col],
+                 edgecolor="black", linewidth=0.6, zorder=3, gid=col)
+        if col != "balance":       # the reading in vol-% (unit on the axis), upright in its segment
+            for xi, h, b0 in zip(x, heights[col], bottom):
+                if np.isfinite(h):
+                    ax_v.text(xi, b0 + h / 2, f"{h:.1f}", rotation=90, ha="center",
+                              va="center", fontsize=8, color="black", zorder=4, gid=f"{col}_label")
+        bottom = bottom + heights[col]
     ax_p.axhline(H2S_RANGE_PPM, color="0.45", lw=0.7, ls="--", zorder=1)
     ax_p.text(len(t) * 0.62, H2S_RANGE_PPM - 3, r"H$_2$S range limit", color="0.35",
               fontsize=9, ha="center", va="top")
-    for col, label in series.items():
-        ax = ax_v if col in ("CH4", "CO2") else ax_p
-        ax.plot(x, t[col], "o", ms=5.5, mfc=COMPOSITION_COLOURS[col], mec="black",
-                mew=0.6, ls="none", zorder=3, clip_on=False, gid=col)
-    ax_v.set_ylim(30, 62)
+    for col in points:
+        ax_p.plot(x, t[col], "o", ms=5.5, mfc=COMPOSITION_COLOURS[col], mec="black",
+                  mew=0.6, ls="none", zorder=3, clip_on=False, gid=col)
+    ax_v.set_ylim(0, 100)
+    ax_v.yaxis.set_major_locator(MultipleLocator(20))
     ax_p.set_ylim(-5, 110)
     # effect of the H2S filter: raw-gas reading -> after-filter reading
     pts_per_ppm = ax_p.get_window_extent().height / np.diff(ax_p.get_ylim())[0] * 72 / fig.dpi
@@ -324,17 +367,19 @@ def fig_composition(t: pd.DataFrame | None = None):
         ax.set_xlim(-0.6, len(t) - 0.4)
         ax.tick_params(axis="x", which="minor", bottom=False, top=False)
         ax.tick_params(axis="x", which="major", bottom=True, top=True)
+    ax_v.tick_params(axis="x", which="major", bottom=False, top=False)   # the bars mark the units
     ax_p.set_xticklabels(t["unit"], rotation=90, fontsize=8)
     fig.align_ylabels((ax_v, ax_p))
-    handles = [Line2D([], [], marker="o", ms=5.5, mfc=COMPOSITION_COLOURS[c], mec="black",
-                      mew=0.6, ls="none") for c in series]
+    handles = [Patch(facecolor=COMPOSITION_COLOURS[c], edgecolor="black", linewidth=0.6) for c in bars]
+    handles += [Line2D([], [], marker="o", ms=5.5, mfc=COMPOSITION_COLOURS[c], mec="black",
+                       mew=0.6, ls="none") for c in points]
     # legend in one row, its top just below the axis title
     fig.canvas.draw()
     below = ax_p.xaxis.label.get_window_extent().transformed(fig.transFigure.inverted()).y0
-    fig.legend(handles, list(series.values()), loc="upper center", ncol=4,
+    fig.legend(handles, list(bars.values()) + list(points.values()), loc="upper center", ncol=5,
                bbox_to_anchor=(0.5, below - 0.004), fontsize=9.5, frameon=True,
                fancybox=False, edgecolor="black", framealpha=1.0,
-               handletextpad=0.2, columnspacing=1.4)
+               handletextpad=0.4, columnspacing=1.2, handlelength=1.1, handleheight=0.9)
     fig.savefig(OUT / "Figure_5.png")
     fig.savefig(OUT / "Figure_5.pdf")
     plt.close(fig)

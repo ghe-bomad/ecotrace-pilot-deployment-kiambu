@@ -5,7 +5,7 @@ The canvas is 6.5 x 2.6 in (2.5:1), saved as vector SVG and PDF. Typography come
 scientific.mplstyle; the cooking-rhythm curve is the mean of Figure 3's daily
 profiles, via the same helper, so the two cannot drift apart.
 
-    python3 make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
+    python3 scripts/make_graphical_abstract.py   # -> figures/graphical_abstract.{svg,pdf}
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ CONCRETE, SOIL, SLATE, STEEL = "#cfcac0", "#8c7b63", "#4a5361", "#6b6b6b"
 FLAME_OUT, FLAME_IN = "#E07B2E", "#F5C542"   # illustrative only, not data
 
 W, H = 6.5, 2.6                               # inches; all drawing is in inch coordinates
-COLS = [(0.12, 2.00), (2.28, 4.08), (4.36, 6.38)]
+COLS = [(0.12, 2.00), (2.16, 3.96), (4.24, 6.38)]
 
 
 def flame(ax, x, y, h, w):
@@ -95,7 +95,7 @@ def panel_worked(fig, ax):
     """
     x0 = COLS[1][0]
     for y, big, small, dx in [(1.90, r"17/20", r"units usable,\\83\,\% completeness", 0.90),
-                              (1.37, r"1.35\,m$^3$", r"median daily\\gas volume\\(lower bound)", 1.12)]:
+                              (1.37, r"1.35\,m$^3$", r"median daily\\gas volume\\(indicative)", 1.12)]:
         ax.text(x0, y, rf"\textbf{{{big}}}", fontsize=19, va="center")
         ax.text(x0 + dx, y, rf"\begin{{tabular}}{{@{{}}l}}{small}\end{{tabular}}", fontsize=9,
                 va="center", color=INK2)
@@ -141,8 +141,9 @@ def graphical_abstract():
                          "savefig.bbox": "standard"})
     fig = plt.figure(figsize=(W, H))
     ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, W); ax.set_ylim(0, H); ax.axis("off")
-    for (x0, x1), t in zip(COLS, ["The pilot", "What worked", "What dMRV must handle"]):
-        ax.text(x0, H - 0.16, rf"\textbf{{{t}}}", fontsize=11.5, va="top", ha="left")
+    # Headings are 10 pt so that the third, with "digital MRV" written out, fits its column.
+    for (x0, x1), t in zip(COLS, ["The pilot", "What worked", "What digital MRV must handle"]):
+        ax.text(x0, H - 0.16, rf"\textbf{{{t}}}", fontsize=10, va="top", ha="left")
         ax.plot([x0, x1], [H - 0.46, H - 0.46], color=RULE, lw=0.8)
     panel_pilot(ax)
     panel_worked(fig, ax)

@@ -5,7 +5,7 @@ Reads the same raw Parquet as make_figures.py and reuses its loaders and
 constants, so the unit sets, pilot window and completeness definition cannot
 drift between the figures and the text.
 
-    python3 make_stats.py
+    python3 scripts/make_stats.py
 """
 from __future__ import annotations
 import glob
